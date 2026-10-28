@@ -16,3 +16,5 @@ All notable changes to this plugin are listed here. The format follows
   failed, changed, missing), a one-line summary and a Refresh button.
 - Plan tab: the SQL of the next migration with its lint findings, loaded when the tab is
   first opened.
+- Lint tab: findings about the pending migrations (or all of them), with severity colors.
+  Double-click a finding to open its migration file.

@@ -19,14 +19,19 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
     MigraxPlanPanel plan = new MigraxPlanPanel(project);
     tabs.addTab("Status", status);
     tabs.addTab("Plan", plan);
+    MigraxLintPanel lint = new MigraxLintPanel(project);
+    tabs.addTab("Lint", lint);
     Content content = ContentFactory.getInstance().createContent(tabs, "", false);
     toolWindow.getContentManager().addContent(content);
     status.refresh();
-    // The plan reads the entities and may build the project: only when the tab is opened.
+    // Each of these tabs runs the command: load it when it is first opened.
     tabs.addChangeListener(
         e -> {
-          if (tabs.getSelectedComponent() == plan && !plan.hasRun()) {
+          Object selected = tabs.getSelectedComponent();
+          if (selected == plan && !plan.hasRun()) {
             plan.refresh();
+          } else if (selected == lint && !lint.hasRun()) {
+            lint.refresh();
           }
         });
   }

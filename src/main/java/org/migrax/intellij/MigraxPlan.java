@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 
 /** The answer of {@code migrax plan --json}: the operations of the next migration and lint. */
@@ -13,13 +14,10 @@ final class MigraxPlan {
   /** One operation with the SQL it runs. */
   record Operation(String kind, String summary, String sql, boolean destructive) {}
 
-  /** One lint finding about the SQL of the plan. */
-  record Finding(String code, String severity, String message, String fix) {}
-
   private final List<Operation> operations;
-  private final List<Finding> findings;
+  private final List<MigraxFinding> findings;
 
-  private MigraxPlan(List<Operation> operations, List<Finding> findings) {
+  private MigraxPlan(List<Operation> operations, List<MigraxFinding> findings) {
     this.operations = operations;
     this.findings = findings;
   }
@@ -39,16 +37,7 @@ final class MigraxPlan {
                 text(op, "kind"), text(op, "summary"), text(op, "sql"), flag(op, "destructive")));
       }
     }
-    List<Finding> findings = new ArrayList<>();
-    if (object.get("lint") instanceof JsonArray lint) {
-      for (JsonElement element : lint) {
-        if (element instanceof JsonObject f) {
-          findings.add(
-              new Finding(
-                  text(f, "code"), text(f, "severity"), text(f, "message"), text(f, "fix")));
-        }
-      }
-    }
+    List<MigraxFinding> findings = MigraxFinding.listFrom(object.get("lint"));
     return new MigraxPlan(operations, findings);
   }
 
@@ -56,7 +45,7 @@ final class MigraxPlan {
     return operations;
   }
 
-  List<Finding> findings() {
+  List<MigraxFinding> findings() {
     return findings;
   }
 
@@ -91,15 +80,7 @@ final class MigraxPlan {
 
   /** The lint findings, one block each; empty when there are none. */
   String lintText() {
-    StringBuilder out = new StringBuilder();
-    for (Finding f : findings) {
-      out.append(f.code()).append(' ').append(f.severity()).append(": ").append(f.message());
-      if (!f.fix().isEmpty()) {
-        out.append("\n  Fix: ").append(f.fix());
-      }
-      out.append('\n');
-    }
-    return out.toString().stripTrailing();
+    return findings.stream().map(MigraxFinding::describe).collect(Collectors.joining("\n"));
   }
 
   private static String text(JsonObject object, String key) {
