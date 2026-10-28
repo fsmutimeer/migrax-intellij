@@ -40,15 +40,12 @@ intellijPlatform {
   }
   pluginVerification {
     ides {
-      if (providers.gradleProperty("verifyAll").isPresent) {
-        // CI: every IDE release from the since-build on (several GB to download).
-        recommended()
-        // From 2025.3 on IntelliJ IDEA is one product (no separate Community build), which
-        // recommended() does not list: the newest release of each line is named here. Raise
-        // these when a new IDE line comes out (JetBrains release feed, product code IIU).
-        for (version in listOf("2025.3.6.1", "2026.1.5", "2026.2.3")) {
-          create(IntelliJPlatformType.IntellijIdea, version)
-        }
+      val verifyIde = providers.gradleProperty("verifyIde")
+      if (verifyIde.isPresent) {
+        // CI: one IDE per job, as -PverifyIde=IntellijIdeaCommunity:2024.2.6. All of them in one
+        // job fill the runner's disk. The list of IDEs is the matrix in .github/workflows/ci.yml.
+        val (type, version) = verifyIde.get().split(":", limit = 2)
+        create(IntelliJPlatformType.valueOf(type), version)
       } else {
         // Locally one IDE: the full set downloads about 20 GB.
         ide("IC", providers.gradleProperty("platformVersion").get())
