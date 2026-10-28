@@ -18,3 +18,5 @@ All notable changes to this plugin are listed here. The format follows
   first opened.
 - Lint tab: findings about the pending migrations (or all of them), with severity colors.
   Double-click a finding to open its migration file.
+- Environments tab: for every configured database, its status (in sync, pending, drift,
+  problems, unreachable), applied and pending migrations, with details for the selected one.

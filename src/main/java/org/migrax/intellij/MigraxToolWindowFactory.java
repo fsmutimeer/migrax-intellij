@@ -21,6 +21,8 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
     tabs.addTab("Plan", plan);
     MigraxLintPanel lint = new MigraxLintPanel(project);
     tabs.addTab("Lint", lint);
+    MigraxEnvironmentsPanel environments = new MigraxEnvironmentsPanel(project);
+    tabs.addTab("Environments", environments);
     Content content = ContentFactory.getInstance().createContent(tabs, "", false);
     toolWindow.getContentManager().addContent(content);
     status.refresh();
@@ -32,6 +34,8 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
             plan.refresh();
           } else if (selected == lint && !lint.hasRun()) {
             lint.refresh();
+          } else if (selected == environments && !environments.hasRun()) {
+            environments.refresh();
           }
         });
   }
