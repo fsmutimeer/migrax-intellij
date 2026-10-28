@@ -8,3 +8,5 @@ All notable changes to this plugin are listed here. The format follows
 
 ### Added
 - First project skeleton: a Migrax tool window at the bottom of the IDE.
+- Settings page (Settings > Tools > Migrax) with the path to the Migrax command. Without a
+  path the plugin uses the `migrax` command found on PATH.

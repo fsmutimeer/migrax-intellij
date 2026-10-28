@@ -1,0 +1,128 @@
+package org.migrax.intellij;
+
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.application.ModalityState;
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
+import com.intellij.openapi.options.Configurable;
+import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.ui.components.JBLabel;
+import com.intellij.util.ui.FormBuilder;
+import com.intellij.util.ui.UIUtil;
+import java.nio.file.Path;
+import java.util.Optional;
+import javax.swing.JComponent;
+import javax.swing.JPanel;
+import javax.swing.Timer;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import org.jetbrains.annotations.Nls;
+import org.jetbrains.annotations.Nullable;
+
+/** The page Settings > Tools > Migrax. */
+public final class MigraxConfigurable implements Configurable {
+
+  private TextFieldWithBrowseButton cliPath;
+  private JBLabel status;
+  private JPanel panel;
+  private Timer pause;
+  private int lookups;
+
+  @Override
+  public @Nls String getDisplayName() {
+    return "Migrax";
+  }
+
+  @Override
+  public @Nullable JComponent createComponent() {
+    cliPath = new TextFieldWithBrowseButton();
+    // The overload with title and description is the one that exists in IDE 2024.2.
+    cliPath.addBrowseFolderListener(
+        "Migrax Command",
+        "Select the migrax launcher, or the folder that contains it",
+        null,
+        FileChooserDescriptorFactory.createSingleFileOrFolderDescriptor());
+    cliPath.getTextField().getDocument().addDocumentListener(new DocumentListener() {
+      @Override
+      public void insertUpdate(DocumentEvent e) {
+        scheduleStatus();
+      }
+
+      @Override
+      public void removeUpdate(DocumentEvent e) {
+        scheduleStatus();
+      }
+
+      @Override
+      public void changedUpdate(DocumentEvent e) {
+        scheduleStatus();
+      }
+    });
+    status = new JBLabel();
+    pause = new Timer(300, event -> showStatus());
+    pause.setRepeats(false);
+    JBLabel hint = new JBLabel("Leave empty to use the migrax command found on PATH.");
+    hint.setForeground(UIUtil.getContextHelpForeground());
+    panel = FormBuilder.createFormBuilder()
+        .addLabeledComponent("Migrax command:", cliPath)
+        .addComponentToRightColumn(hint)
+        .addComponentToRightColumn(status)
+        .addComponentFillVertically(new JPanel(), 0)
+        .getPanel();
+    reset();
+    showStatus();
+    return panel;
+  }
+
+  /** Waits for a pause in typing before the lookup starts. */
+  private void scheduleStatus() {
+    if (pause != null) {
+      pause.restart();
+    }
+  }
+
+  /** Looks for the command off the UI thread: PATH can contain slow network drives. */
+  private void showStatus() {
+    if (cliPath == null) {
+      return;
+    }
+    String configured = cliPath.getText();
+    int lookup = ++lookups;
+    ApplicationManager.getApplication().executeOnPooledThread(() -> {
+      Optional<Path> found = MigraxCliLocator.forThisMachine().locate(configured);
+      String text = found
+          .map(path -> "Found: " + path)
+          .orElse("Migrax command not found. Set the path above or add it to PATH.");
+      ApplicationManager.getApplication().invokeLater(() -> {
+        if (status != null && lookup == lookups) {
+          status.setText(text);
+        }
+      }, ModalityState.any());
+    });
+  }
+
+  @Override
+  public boolean isModified() {
+    return !cliPath.getText().trim().equals(MigraxSettings.getInstance().getCliPath());
+  }
+
+  @Override
+  public void apply() {
+    MigraxSettings.getInstance().setCliPath(cliPath.getText());
+  }
+
+  @Override
+  public void reset() {
+    cliPath.setText(MigraxSettings.getInstance().getCliPath());
+  }
+
+  @Override
+  public void disposeUIResources() {
+    if (pause != null) {
+      pause.stop();
+    }
+    pause = null;
+    cliPath = null;
+    status = null;
+    panel = null;
+  }
+}
