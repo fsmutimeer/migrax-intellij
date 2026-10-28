@@ -18,6 +18,8 @@
                              id="org.migrax.ide.settings"
                              displayName="Migrax"
                              instance="org.migrax.intellij.MigraxConfigurable"/>
+    <statusBarWidgetFactory id="MigraxStatusBar"
+                            implementation="org.migrax.intellij.MigraxStatusBarWidgetFactory"/>
     <toolWindow id="Migrax"
                 anchor="bottom"
                 icon="/icons/migrax.svg"

@@ -20,3 +20,5 @@ All notable changes to this plugin are listed here. The format follows
   Double-click a finding to open its migration file.
 - Environments tab: for every configured database, its status (in sync, pending, drift,
   problems, unreachable), applied and pending migrations, with details for the selected one.
+- Status bar widget: "Migrax: 2 pending" or "Migrax: in sync", with failed migrations and entity
+  changes not yet in a migration. Click it to refresh and open the tool window.
