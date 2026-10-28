@@ -1,0 +1,22 @@
+<idea-plugin>
+  <id>org.migrax.ide</id>
+  <name>Migrax</name>
+  <vendor url="https://migrax.org">Migrax</vendor>
+
+  <description><![CDATA[
+    Companion for <a href="https://migrax.org">Migrax</a>, which generates SQL migrations from
+    your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA. Pending migrations,
+    the SQL of the next migration and lint findings are coming in the next versions.
+    Needs the Migrax command line.
+  ]]></description>
+
+  <depends>com.intellij.modules.platform</depends>
+  <depends>com.intellij.modules.java</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="Migrax"
+                anchor="bottom"
+                icon="/icons/migrax.svg"
+                factoryClass="org.migrax.intellij.MigraxToolWindowFactory"/>
+  </extensions>
+</idea-plugin>
