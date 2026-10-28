@@ -14,3 +14,5 @@ All notable changes to this plugin are listed here. The format follows
   two minutes, and its JSON output is read for the tool window tabs that follow.
 - Status tab in the Migrax tool window: every migration with its state (applied, pending,
   failed, changed, missing), a one-line summary and a Refresh button.
+- Plan tab: the SQL of the next migration with its lint findings, loaded when the tab is
+  first opened.

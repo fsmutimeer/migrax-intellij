@@ -9,11 +9,8 @@ import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.JBUI;
 import java.awt.BorderLayout;
 import java.awt.Component;
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTable;
@@ -56,29 +53,14 @@ final class MigraxStatusPanel extends JPanel {
 
   /** Runs {@code migrax status --json} in the background and shows the result. */
   void refresh() {
-    String base = project.getBasePath();
-    if (base == null) {
-      show("This project has no folder on disk.", List.of());
-      return;
-    }
-    Optional<Path> launcher =
-        MigraxCliLocator.forThisMachine().locate(MigraxSettings.getInstance().getCliPath());
-    if (launcher.isEmpty()) {
-      show("The Migrax command was not found. Set its path in Settings > Tools > Migrax.",
-          List.of());
-      return;
-    }
-    Path folder;
-    try {
-      folder = Path.of(base);
-    } catch (InvalidPathException e) {
-      show("The project folder is not a valid path: " + base, List.of());
-      return;
-    }
     refresh.setEnabled(false);
     summary.setText("Reading migrations...");
-    new MigraxCli(launcher.get(), folder)
-        .runInBackground(project, "Migrax status", List.of("status", "--json"), this::showResult);
+    MigraxCommands.run(
+        project,
+        "Migrax status",
+        List.of("status", "--json"),
+        this::showResult,
+        message -> show(message, List.of()));
   }
 
   private void showResult(MigraxResult result) {

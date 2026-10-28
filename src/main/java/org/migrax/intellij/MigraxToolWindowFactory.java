@@ -16,9 +16,18 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
   public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
     MigraxStatusPanel status = new MigraxStatusPanel(project);
     JBTabbedPane tabs = new JBTabbedPane();
+    MigraxPlanPanel plan = new MigraxPlanPanel(project);
     tabs.addTab("Status", status);
+    tabs.addTab("Plan", plan);
     Content content = ContentFactory.getInstance().createContent(tabs, "", false);
     toolWindow.getContentManager().addContent(content);
     status.refresh();
+    // The plan reads the entities and may build the project: only when the tab is opened.
+    tabs.addChangeListener(
+        e -> {
+          if (tabs.getSelectedComponent() == plan && !plan.hasRun()) {
+            plan.refresh();
+          }
+        });
   }
 }
