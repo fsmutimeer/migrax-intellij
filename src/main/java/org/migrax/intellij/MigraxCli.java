@@ -103,9 +103,8 @@ final class MigraxCli {
 
       @Override
       public void onFinished() {
-        if (result != null) {
-          onDone.accept(result);
-        }
+        // Always report back, so a screen waiting for the answer is never left waiting.
+        onDone.accept(result == null ? MigraxResult.cancelledRun() : result);
       }
     }.queue();
   }

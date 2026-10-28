@@ -114,27 +114,46 @@ final class MigraxResult {
     return value != null && value.isJsonPrimitive() ? value.getAsString() : "";
   }
 
-  /**
-   * Parses the first JSON object that starts a line; text before it (a note) and after it is
-   * ignored.
-   */
+  /** The first JSON object that starts a line; see {@link #parseJsonValue}. */
   @Nullable
   static JsonObject parseJson(String output) {
+    JsonElement value = parseJsonValue(output);
+    return value != null && value.isJsonObject() ? value.getAsJsonObject() : null;
+  }
+
+  /**
+   * Parses the first JSON object or array that starts a line; text before it (a note) and after
+   * it is ignored. Returns null when there is none.
+   */
+  @Nullable
+  static JsonElement parseJsonValue(String output) {
     if (output == null) {
       return null;
     }
     String text = output.trim();
-    int start = text.startsWith("{") ? 0 : text.indexOf("\n{") + 1;
-    if (start <= 0 && !text.startsWith("{")) {
+    int start = startsJson(text) ? 0 : firstJsonLine(text);
+    if (start < 0) {
       return null;
     }
     try {
       JsonReader reader = new JsonReader(new StringReader(text.substring(start)));
       reader.setLenient(true);
-      JsonElement element = JsonParser.parseReader(reader);
-      return element.isJsonObject() ? element.getAsJsonObject() : null;
+      return JsonParser.parseReader(reader);
     } catch (JsonParseException e) {
       return null;
     }
+  }
+
+  private static boolean startsJson(String text) {
+    return text.startsWith("{") || text.startsWith("[");
+  }
+
+  private static int firstJsonLine(String text) {
+    int at = text.indexOf("\n{");
+    int array = text.indexOf("\n[");
+    if (at < 0 || (array >= 0 && array < at)) {
+      at = array;
+    }
+    return at < 0 ? -1 : at + 1;
   }
 }
