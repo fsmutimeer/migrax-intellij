@@ -38,8 +38,13 @@ intellijPlatform {
   }
   pluginVerification {
     ides {
-      // One IDE locally: the full recommended() set downloads about 20 GB.
-      ide("IC", providers.gradleProperty("platformVersion").get())
+      if (providers.gradleProperty("verifyAll").isPresent) {
+        // CI: every IDE release from the since-build on (several GB to download).
+        recommended()
+      } else {
+        // Locally one IDE: the full set downloads about 20 GB.
+        ide("IC", providers.gradleProperty("platformVersion").get())
+      }
     }
   }
 }

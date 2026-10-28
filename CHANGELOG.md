@@ -22,3 +22,5 @@ All notable changes to this plugin are listed here. The format follows
   problems, unreachable), applied and pending migrations, with details for the selected one.
 - Status bar widget: "Migrax: 2 pending" or "Migrax: in sync", with failed migrations and entity
   changes not yet in a migration. Click it to refresh and open the tool window.
+- Continuous integration: build and tests on Linux and Windows, and the Plugin Verifier against
+  every recommended IDE version.
