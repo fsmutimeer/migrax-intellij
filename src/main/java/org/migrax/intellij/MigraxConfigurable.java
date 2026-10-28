@@ -4,6 +4,7 @@ import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.application.ModalityState;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.Configurable;
+import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.FormBuilder;
@@ -35,12 +36,13 @@ public final class MigraxConfigurable implements Configurable {
   @Override
   public @Nullable JComponent createComponent() {
     cliPath = new TextFieldWithBrowseButton();
-    // The overload with title and description is the one that exists in IDE 2024.2.
+    // The overload with title and description is scheduled for removal; a listener with a
+    // descriptor exists in every supported IDE version.
     cliPath.addBrowseFolderListener(
-        "Migrax Command",
-        "Select the migrax launcher, or the folder that contains it",
-        null,
-        FileChooserDescriptorFactory.createSingleFileOrFolderDescriptor());
+        new TextBrowseFolderListener(
+            FileChooserDescriptorFactory.createSingleFileOrFolderDescriptor()
+                .withTitle("Migrax Command")
+                .withDescription("Select the migrax launcher, or the folder that contains it")));
     cliPath.getTextField().getDocument().addDocumentListener(new DocumentListener() {
       @Override
       public void insertUpdate(DocumentEvent e) {

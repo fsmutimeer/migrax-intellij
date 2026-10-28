@@ -136,9 +136,9 @@ final class MigraxResult {
       return null;
     }
     try {
-      JsonReader reader = new JsonReader(new StringReader(text.substring(start)));
-      reader.setLenient(true);
-      return JsonParser.parseReader(reader);
+      // Reads one value and stops there, so text after it does not matter. parseReader makes
+      // the reader lenient itself.
+      return JsonParser.parseReader(new JsonReader(new StringReader(text.substring(start))));
     } catch (JsonParseException e) {
       return null;
     }
