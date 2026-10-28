@@ -27,11 +27,19 @@ public final class MigraxStatusBarWidgetFactory implements StatusBarWidgetFactor
     return "Migrax";
   }
 
-  /** Only projects that use Migrax get the widget; in others the plugin stays silent. */
+  /**
+   * Only projects that use Migrax get the widget; in others the plugin stays silent. This may be
+   * called on the editor thread, so it does two quick file checks at most; the search of the
+   * settings files and sub-folders runs in the background after the project opens (see
+   * {@link MigraxStartupActivity}) and switches the widget on when it finds something.
+   */
   @Override
   public boolean isAvailable(@NotNull Project project) {
+    if (MigraxHealthService.getInstance(project).isDetected()) {
+      return true;
+    }
     String base = project.getBasePath();
-    return base != null && MigraxProjectDetector.isMigraxProject(Path.of(base));
+    return base != null && MigraxProjectDetector.hasMarker(Path.of(base));
   }
 
   @Override

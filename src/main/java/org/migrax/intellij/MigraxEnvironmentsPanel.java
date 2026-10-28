@@ -75,14 +75,17 @@ final class MigraxEnvironmentsPanel extends JPanel {
   void refresh() {
     refresh.setEnabled(false);
     summary.setText("Asking the environments...");
-    ran |=
-        MigraxCommands.run(
-            project,
-            "Migrax environments",
-            List.of("environments", "--json"),
-            TIMEOUT_MILLIS,
-            this::showResult,
-            this::showError);
+    ran = true;
+    MigraxCommands.run(
+        project,
+        "Migrax environments",
+        List.of("environments", "--json"),
+        TIMEOUT_MILLIS,
+        this::showResult,
+        message -> {
+          ran = false;
+          showError(message);
+        });
   }
 
   private void showResult(MigraxResult result) {

@@ -60,14 +60,17 @@ final class MigraxPlanPanel extends JPanel {
     summary.setText("Planning...");
     // Not marked as run when the command could not start, so the tab tries again once the
     // path is fixed in the settings. Planning may build the project first: allow ten minutes.
-    ran |=
-        MigraxCommands.run(
-            project,
-            "Migrax plan",
-            List.of("plan", "--json"),
-            PLAN_TIMEOUT_MILLIS,
-            this::showResult,
-            this::showError);
+    ran = true;
+    MigraxCommands.run(
+        project,
+        "Migrax plan",
+        List.of("plan", "--json"),
+        PLAN_TIMEOUT_MILLIS,
+        this::showResult,
+        message -> {
+          ran = false;
+          showError(message);
+        });
   }
 
   private void showResult(MigraxResult result) {

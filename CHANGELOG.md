@@ -24,3 +24,7 @@ All notable changes to this plugin are listed here. The format follows
   changes not yet in a migration. Click it to refresh and open the tool window.
 - Continuous integration: build and tests on Linux and Windows, and the Plugin Verifier against
   every recommended IDE version.
+- A Migrax project in a sub-folder of the IDE project (a multi-module repository) is found, and
+  the status bar entry appears as soon as one is found, without restarting the IDE.
+- Finding the Migrax command and the project no longer touches the disk on the editor thread.
+- Refreshing the Status tab also refreshes the status bar entry.

@@ -18,6 +18,7 @@
                              id="org.migrax.ide.settings"
                              displayName="Migrax"
                              instance="org.migrax.intellij.MigraxConfigurable"/>
+    <postStartupActivity implementation="org.migrax.intellij.MigraxStartupActivity"/>
     <statusBarWidgetFactory id="MigraxStatusBar"
                             implementation="org.migrax.intellij.MigraxStatusBarWidgetFactory"/>
     <toolWindow id="Migrax"

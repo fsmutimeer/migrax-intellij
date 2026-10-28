@@ -5,8 +5,6 @@ import com.intellij.execution.configurations.GeneralCommandLine;
 import com.intellij.execution.process.CapturingProcessHandler;
 import com.intellij.execution.process.ProcessOutput;
 import com.intellij.openapi.progress.ProgressIndicator;
-import com.intellij.openapi.progress.Task;
-import com.intellij.openapi.project.Project;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
@@ -15,15 +13,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
-import java.util.function.Consumer;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Runs the Migrax command in a folder, one call at a time.
  *
  * <p>Never call {@link #run} on the editor thread: it waits for the process. Use {@link
- * #runInBackground} from the UI. Cancelling the progress stops the process and its children.
+ * MigraxCommands} from the UI. Cancelling the progress stops the process and its children.
  * Passwords never go on the command line: the command reads them from its own settings and
  * environment variables, which the process inherits (the environment a shell would give it,
  * so an IDE started from the dock sees the same variables as a terminal).
@@ -82,31 +78,6 @@ final class MigraxCli {
     } finally {
       oneAtATime.release();
     }
-  }
-
-  /**
-   * Runs the command as a cancellable background task and hands the result to {@code onDone} on
-   * the editor thread.
-   */
-  void runInBackground(
-      @NotNull Project project,
-      @NotNull String title,
-      @NotNull List<String> args,
-      @NotNull Consumer<MigraxResult> onDone) {
-    new Task.Backgroundable(project, title, true) {
-      private MigraxResult result;
-
-      @Override
-      public void run(@NotNull ProgressIndicator indicator) {
-        result = MigraxCli.this.run(args, indicator);
-      }
-
-      @Override
-      public void onFinished() {
-        // Always report back, so a screen waiting for the answer is never left waiting.
-        onDone.accept(result == null ? MigraxResult.cancelledRun() : result);
-      }
-    }.queue();
   }
 
   private boolean acquire(@Nullable ProgressIndicator indicator) throws InterruptedException {

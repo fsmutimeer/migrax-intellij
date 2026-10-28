@@ -1,10 +1,16 @@
 package org.migrax.intellij;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Keeps the latest {@link MigraxHealth} of a project for the status bar. It asks the command
@@ -19,9 +25,13 @@ public final class MigraxHealthService {
 
   private final Project project;
   private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
-  // Only used on the editor thread: refresh() and every callback run there.
+  // health and running are only used on the editor thread: refresh() and the callbacks.
   private MigraxHealth health = MigraxHealth.unavailable("Not checked yet");
   private boolean running;
+  // These are also used off the editor thread (findRoot runs in background tasks).
+  private volatile boolean detected;
+  private volatile Path root;
+  private final AtomicBoolean detectedOnce = new AtomicBoolean();
 
   public MigraxHealthService(Project project) {
     this.project = project;
@@ -54,12 +64,50 @@ public final class MigraxHealthService {
       return;
     }
     running = true;
-    boolean started =
-        MigraxCommands.run(
-            project, "Migrax status", List.of("status", "--json"), this::onStatus, this::onProblem);
-    if (!started) {
-      running = false;
+    MigraxCommands.run(
+        project, "Migrax status", List.of("status", "--json"), this::onStatus, this::onProblem);
+  }
+
+  /** True once a Migrax project was found in this IDE project (see {@link #findRoot}). */
+  boolean isDetected() {
+    return detected;
+  }
+
+  /**
+   * Finds the folder to run the command in: the Migrax project folder (also in a sub-module),
+   * or the project folder when there is none, so the command can say what is missing. Reads the
+   * disk: call it from a background thread. When a Migrax project shows up for the first time
+   * the status bar widget is switched on.
+   */
+  Optional<Path> findRoot() {
+    String base = project.getBasePath();
+    if (base == null) {
+      return Optional.empty();
     }
+    Path folder;
+    try {
+      folder = Path.of(base);
+    } catch (InvalidPathException e) {
+      return Optional.empty();
+    }
+    // The folder found earlier is used again while it is still a Migrax project: searching the
+    // tree for every command would be slow in a big repository.
+    Path known = root;
+    Optional<Path> found =
+        known != null && MigraxProjectDetector.isMigraxProject(known)
+            ? Optional.of(known)
+            : MigraxProjectDetector.findRoot(folder);
+    root = found.orElse(null);
+    if (found.isPresent() && detectedOnce.compareAndSet(false, true)) {
+      detected = true;
+      ApplicationManager.getApplication().invokeLater(this::showWidget, project.getDisposed());
+    }
+    return Optional.of(found.orElse(folder));
+  }
+
+  private void showWidget() {
+    project.getService(StatusBarWidgetsManager.class)
+        .updateWidget(MigraxStatusBarWidgetFactory.class);
   }
 
   private void onStatus(MigraxResult result) {
@@ -83,17 +131,13 @@ public final class MigraxHealthService {
       done(MigraxHealth.unavailable(orDefault(result.errorMessage(), "Status unavailable")));
       return;
     }
-    boolean started =
-        MigraxCommands.run(
-            project,
-            "Migrax check",
-            List.of("check", "--json"),
-            CHECK_TIMEOUT_MILLIS,
-            checked -> onCheck(status, checked),
-            reason -> done(MigraxHealth.of(status, -1, reason)));
-    if (!started) {
-      running = false;
-    }
+    MigraxCommands.run(
+        project,
+        "Migrax check",
+        List.of("check", "--json"),
+        CHECK_TIMEOUT_MILLIS,
+        checked -> onCheck(status, checked),
+        reason -> done(MigraxHealth.of(status, -1, reason)));
   }
 
   private void onCheck(MigraxStatus status, MigraxResult result) {

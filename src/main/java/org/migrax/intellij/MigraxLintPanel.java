@@ -87,7 +87,16 @@ final class MigraxLintPanel extends JPanel {
     summary.setText("Checking migrations...");
     List<String> args =
         all.isSelected() ? List.of("lint", "--json", "--all") : List.of("lint", "--json");
-    ran |= MigraxCommands.run(project, "Migrax lint", args, this::showResult, this::showError);
+    ran = true;
+    MigraxCommands.run(
+        project,
+        "Migrax lint",
+        args,
+        this::showResult,
+        message -> {
+          ran = false;
+          showError(message);
+        });
   }
 
   private void showResult(MigraxResult result) {
