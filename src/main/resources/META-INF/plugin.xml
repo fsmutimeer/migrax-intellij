@@ -5,9 +5,10 @@
 
   <description><![CDATA[
     Companion for <a href="https://migrax.org">Migrax</a>, which generates SQL migrations from
-    your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA. Pending migrations,
-    the SQL of the next migration and lint findings are coming in the next versions.
-    Needs the Migrax command line.
+    your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA with the state of
+    the migrations, the SQL of the next migration, lint findings and the configured databases,
+    a status bar entry, and an icon next to entity classes whose changes are not in a migration
+    yet. Needs the Migrax command line.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
@@ -21,6 +22,9 @@
     <postStartupActivity implementation="org.migrax.intellij.MigraxStartupActivity"/>
     <statusBarWidgetFactory id="MigraxStatusBar"
                             implementation="org.migrax.intellij.MigraxStatusBarWidgetFactory"/>
+    <codeInsight.lineMarkerProvider
+        language="JAVA"
+        implementationClass="org.migrax.intellij.MigraxEntityLineMarkerProvider"/>
     <toolWindow id="Migrax"
                 anchor="bottom"
                 icon="/icons/migrax.svg"

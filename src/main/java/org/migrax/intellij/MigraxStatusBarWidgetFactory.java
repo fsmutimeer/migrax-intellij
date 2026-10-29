@@ -106,7 +106,8 @@ public final class MigraxStatusBarWidgetFactory implements StatusBarWidgetFactor
     public @Nullable Consumer<MouseEvent> getClickConsumer() {
       return event -> {
         service.refresh();
-        ToolWindow window = ToolWindowManager.getInstance(project).getToolWindow("Migrax");
+        ToolWindow window =
+            ToolWindowManager.getInstance(project).getToolWindow(MigraxToolWindowFactory.ID);
         if (window != null) {
           window.activate(null);
         }

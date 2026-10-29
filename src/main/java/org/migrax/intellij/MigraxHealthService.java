@@ -1,5 +1,7 @@
 package org.migrax.intellij;
 
+import com.google.gson.JsonElement;
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
@@ -28,6 +30,8 @@ public final class MigraxHealthService {
   // health and running are only used on the editor thread: refresh() and the callbacks.
   private MigraxHealth health = MigraxHealth.unavailable("Not checked yet");
   private boolean running;
+  // Read by the editor's line markers in background read actions.
+  private volatile MigraxEntityChanges entityChanges = MigraxEntityChanges.NONE;
   // These are also used off the editor thread (findRoot runs in background tasks).
   private volatile boolean detected;
   private volatile Path root;
@@ -56,6 +60,11 @@ public final class MigraxHealthService {
 
   String tooltip() {
     return health.tooltip();
+  }
+
+  /** The entity changes of the last check, by class; any thread. */
+  MigraxEntityChanges entityChanges() {
+    return entityChanges;
   }
 
   /** Asks the command again; does nothing while a check is already running. Editor thread. */
@@ -154,12 +163,26 @@ public final class MigraxHealthService {
       return;
     }
     // The command exits 2 when there are changes but it still prints them.
-    int changes =
+    JsonElement json =
         result.cancelled() || result.timedOut()
-            ? -1
-            : MigraxHealth.changesIn(MigraxResult.parseJsonValue(result.stdout()));
+            ? null
+            : MigraxResult.parseJsonValue(result.stdout());
+    int changes = MigraxHealth.changesIn(json);
     String note = changes >= 0 ? "" : orDefault(result.errorMessage(), "Check unavailable");
+    // A check that did not answer keeps the icons of the last one that did.
+    if (changes >= 0) {
+      showEntityChanges(MigraxEntityChanges.from(json));
+    }
     done(MigraxHealth.of(status, changes, note));
+  }
+
+  /** Stores the changes and redraws the editor's margin icons when they differ. */
+  private void showEntityChanges(MigraxEntityChanges latest) {
+    if (latest.equals(entityChanges)) {
+      return;
+    }
+    entityChanges = latest;
+    DaemonCodeAnalyzer.getInstance(project).restart();
   }
 
   private void onProblem(String reason) {

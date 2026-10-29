@@ -28,3 +28,6 @@ All notable changes to this plugin are listed here. The format follows
   the status bar entry appears as soon as one is found, without restarting the IDE.
 - Finding the Migrax command and the project no longer touches the disk on the editor thread.
 - Refreshing the Status tab also refreshes the status bar entry.
+- An icon in the editor's margin next to a Java entity class whose changes are not in a
+  migration yet, with the changes in its tooltip; a click opens the Plan tab. Needs a Migrax
+  command that names the entity class in `check --json`.
