@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -22,9 +24,15 @@ final class MigraxEntityChanges {
 
   // Class name with dots (also for nested classes) to the summaries of its changes.
   private final Map<String, List<String>> byClass;
+  // The class names without the package and the outer classes, a quick test for the editor.
+  private final Set<String> simpleNames;
 
   private MigraxEntityChanges(Map<String, List<String>> byClass) {
     this.byClass = byClass;
+    this.simpleNames =
+        byClass.keySet().stream()
+            .map(name -> name.substring(name.lastIndexOf('.') + 1))
+            .collect(Collectors.toUnmodifiableSet());
   }
 
   /** Reads the output of {@code migrax check --json}; {@link #NONE} when it is not that. */
@@ -61,8 +69,9 @@ final class MigraxEntityChanges {
     return byClass.getOrDefault(qualifiedName, List.of());
   }
 
-  boolean isEmpty() {
-    return byClass.isEmpty();
+  /** Whether a changed class has this name without its package, such as "Customer". */
+  boolean hasSimpleName(@Nullable String simpleName) {
+    return simpleName != null && simpleNames.contains(simpleName);
   }
 
   @Override

@@ -7,12 +7,14 @@
     Companion for <a href="https://migrax.org">Migrax</a>, which generates SQL migrations from
     your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA with the state of
     the migrations, the SQL of the next migration, lint findings and the configured databases,
-    a status bar entry, an icon next to entity classes whose changes are not in a migration
-    yet, and lint findings marked inside migration files. Needs the Migrax command line.
+    a status bar entry, an icon next to entity classes (Java and Kotlin) whose changes are not
+    in a migration yet, and lint findings marked inside migration files. Needs the Migrax
+    command line.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.java</depends>
+  <depends optional="true" config-file="migrax-kotlin.xml">org.jetbrains.kotlin</depends>
 
   <extensions defaultExtensionNs="com.intellij">
     <applicationConfigurable parentId="tools"
@@ -33,6 +35,12 @@
                 anchor="bottom"
                 icon="/icons/migrax.svg"
                 factoryClass="org.migrax.intellij.MigraxToolWindowFactory"/>
+  </extensions>
+
+  <!-- Without this the Kotlin plugin in K2 mode turns off the Kotlin part. The IDE reads it
+       here, from the main file, when the plugin depends on Kotlin. -->
+  <extensions defaultExtensionNs="org.jetbrains.kotlin">
+    <supportsKotlinPluginMode supportsK1="true" supportsK2="true"/>
   </extensions>
 
   <projectListeners>

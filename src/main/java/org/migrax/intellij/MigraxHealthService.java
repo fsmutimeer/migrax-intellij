@@ -220,7 +220,7 @@ public final class MigraxHealthService implements Disposable {
   }
 
   /** Stores the changes and redraws the editor's margin icons when they differ. */
-  private void showEntityChanges(MigraxEntityChanges latest) {
+  void showEntityChanges(MigraxEntityChanges latest) {
     if (latest.equals(entityChanges)) {
       return;
     }

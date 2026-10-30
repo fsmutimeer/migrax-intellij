@@ -1,4 +1,5 @@
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
   id("java")
@@ -25,8 +26,13 @@ dependencies {
   intellijPlatform {
     intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
     bundledPlugin("com.intellij.java")
+    // Optional at run time (migrax-kotlin.xml); here for the editor tests with Kotlin files.
+    bundledPlugin("org.jetbrains.kotlin")
+    testFramework(TestFrameworkType.Platform)
   }
   testImplementation("junit:junit:4.13.2")
+  // The IDE's test framework needs it on 2024.2 but does not bring it.
+  testImplementation("org.opentest4j:opentest4j:1.3.0")
 }
 
 intellijPlatform {

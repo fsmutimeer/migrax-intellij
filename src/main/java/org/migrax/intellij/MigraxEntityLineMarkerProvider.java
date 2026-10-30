@@ -6,17 +6,19 @@ import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.IconLoader;
 import com.intellij.openapi.util.text.StringUtil;
-import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiIdentifier;
+import com.intellij.psi.PsiNameIdentifierOwner;
 import java.util.List;
 import javax.swing.Icon;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.uast.UClass;
+import org.jetbrains.uast.UastContextKt;
 
 /**
  * An icon in the editor's margin next to an entity class whose changes are not in a migration
- * yet. The tooltip lists the changes; a click opens the Plan tab with their SQL.
+ * yet. The tooltip lists the changes; a click opens the Plan tab with their SQL. Registered for
+ * Java, and for Kotlin when the Kotlin plugin is enabled (migrax-kotlin.xml).
  */
 public final class MigraxEntityLineMarkerProvider extends LineMarkerProviderDescriptor {
 
@@ -35,16 +37,21 @@ public final class MigraxEntityLineMarkerProvider extends LineMarkerProviderDesc
 
   @Override
   public @Nullable LineMarkerInfo<?> getLineMarkerInfo(@NotNull PsiElement element) {
-    // Called for every leaf element: the cheap test first.
-    if (!(element instanceof PsiIdentifier)) {
+    // Called for every leaf element: the cheap tests first. Markers go on leaf elements: the
+    // name of the class.
+    if (element.getFirstChild() != null
+        || !(element.getParent() instanceof PsiNameIdentifierOwner owner)
+        || owner.getNameIdentifier() != element) {
       return null;
     }
     Project project = element.getProject();
     MigraxEntityChanges all = MigraxHealthService.getInstance(project).entityChanges();
-    // Markers go on leaf elements: the name of the class.
-    if (all.isEmpty()
-        || !(element.getParent() instanceof PsiClass type)
-        || type.getNameIdentifier() != element) {
+    if (!all.hasSimpleName(owner.getName())) {
+      return null;
+    }
+    // UAST gives a Java and a Kotlin class the same shape and the same qualified name.
+    UClass type = UastContextKt.toUElement(owner, UClass.class);
+    if (type == null) {
       return null;
     }
     List<String> changes = all.of(type.getQualifiedName());

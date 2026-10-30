@@ -1,0 +1,8 @@
+<!-- Loaded only when the Kotlin plugin is enabled. -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <codeInsight.lineMarkerProvider
+        language="kotlin"
+        implementationClass="org.migrax.intellij.MigraxEntityLineMarkerProvider"/>
+  </extensions>
+</idea-plugin>

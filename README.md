@@ -13,11 +13,11 @@ do not have to leave the editor.
   configured database).
 - A status bar entry ("Migrax: 2 pending", "Migrax: in sync"), shown only in projects that use
   Migrax.
-- An icon in the editor's margin next to a Java entity class with changes that are not in a
-  migration yet. Its tooltip lists the changes; click it to see their SQL in the Plan tab. You
-  can turn it off in Settings > Editor > General > Gutter Icons. It needs a Migrax command that
-  names the entity class in `check --json` (the next Migrax release), and entities read with
-  Hibernate 5 or newer or by annotation scanning.
+- An icon in the editor's margin next to a Java or Kotlin entity class with changes that are
+  not in a migration yet. Its tooltip lists the changes; click it to see their SQL in the Plan
+  tab. You can turn it off in Settings > Editor > General > Gutter Icons. It needs a Migrax
+  command that names the entity class in `check --json` (the next Migrax release), and
+  entities read with Hibernate 5 or newer or by annotation scanning.
 - Lint findings inside migration files: a risky statement is underlined (red for errors) and
   its tooltip gives the rule, the message and the fix. The text in the editor is checked, also
   before you save it, with `migrax lint`.

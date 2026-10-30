@@ -38,3 +38,5 @@ All notable changes to this plugin are listed here. The format follows
   migration or settings file changes, in the editor or on disk. Build output is ignored, so the
   build the check starts does not trigger another one. Can be turned off in Settings > Tools >
   Migrax.
+- The margin icon also shows next to Kotlin entity classes (with the Kotlin plugin, in K1 and
+  K2 mode).

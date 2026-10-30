@@ -1,6 +1,7 @@
 package org.migrax.intellij;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
@@ -39,6 +40,16 @@ public class MigraxEntityChangesTest {
     MigraxEntityChanges changes =
         check("{\"summary\":\"create table line\",\"entity\":\"com.example.Order$Line\"}");
     assertEquals(List.of("create table line"), changes.of("com.example.Order.Line"));
+  }
+
+  @Test
+  public void simpleNamesLeaveOutThePackageAndTheOuterClass() {
+    MigraxEntityChanges changes =
+        check("{\"summary\":\"create table line\",\"entity\":\"com.example.Order$Line\"}");
+    assertTrue(changes.hasSimpleName("Line"));
+    assertFalse(changes.hasSimpleName("Order"));
+    assertFalse(changes.hasSimpleName("Order.Line"));
+    assertFalse(changes.hasSimpleName(null));
   }
 
   @Test
