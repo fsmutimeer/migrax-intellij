@@ -19,6 +19,7 @@ final class MigraxHealth {
   private final boolean hasMigrations;
   private final boolean nothingToApply;
   private final boolean nothingApplied;
+  private final boolean nothingBroken;
   private final int changes;
   private final String note;
 
@@ -27,7 +28,7 @@ final class MigraxHealth {
    * @param note why something could not be checked, or empty
    */
   MigraxHealth(int problems, int pending, int changes, String note) {
-    this(problems, pending, false, false, false, changes, note);
+    this(problems, pending, false, false, false, false, changes, note);
   }
 
   private MigraxHealth(
@@ -36,6 +37,7 @@ final class MigraxHealth {
       boolean hasMigrations,
       boolean nothingToApply,
       boolean nothingApplied,
+      boolean nothingBroken,
       int changes,
       String note) {
     this.problems = problems;
@@ -43,6 +45,7 @@ final class MigraxHealth {
     this.hasMigrations = hasMigrations;
     this.nothingToApply = nothingToApply;
     this.nothingApplied = nothingApplied;
+    this.nothingBroken = nothingBroken;
     this.changes = changes;
     this.note = note;
   }
@@ -91,6 +94,12 @@ final class MigraxHealth {
     return nothingApplied ? "No applied migrations at the last check" : null;
   }
 
+  /** Why Repair has nothing to do, or null when it may have. */
+  @Nullable
+  String nothingToRepair() {
+    return nothingBroken ? "No failed or missing migrations at the last check" : null;
+  }
+
   /**
    * Why Generate has nothing to do, or null when it may have. Without any migration it stays on:
    * the first run writes the baseline of an existing database.
@@ -113,18 +122,23 @@ final class MigraxHealth {
     // keeps the action on. Skipped migrations belong to other environments.
     boolean nothingToApply = status.rows().stream().allMatch(r -> is(r, "applied", "skipped"));
     boolean nothingApplied = status.rows().stream().allMatch(r -> is(r, "pending", "skipped"));
+    // Repair fixes failed and missing migrations only.
+    boolean nothingBroken =
+        status.rows().stream()
+            .allMatch(r -> is(r, "applied", "skipped", "pending", "outdated", "changed"));
     return new MigraxHealth(
         problems,
         pending,
         !status.rows().isEmpty(),
         nothingToApply,
         nothingApplied,
+        nothingBroken,
         changes,
         note);
   }
 
-  private static boolean is(MigraxStatus.Row row, String one, String other) {
-    return row.state().equals(one) || row.state().equals(other);
+  private static boolean is(MigraxStatus.Row row, String... states) {
+    return List.of(states).contains(row.state());
   }
 
   /** Counts the changes of {@code migrax check --json}; -1 when the output is not that. */

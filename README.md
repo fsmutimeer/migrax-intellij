@@ -28,11 +28,16 @@ do not have to leave the editor.
   - *Generate Migration* writes the next migration and opens it with its rollback script.
     When a change looks like a rename it asks "Did you rename ...?", so the data is kept, and
     it asks before a migration that drops tables or columns.
+  - *New Migration...* creates an empty migration and its rollback script for hand-written
+    SQL, such as a data change, and opens both.
   - *Show Plan* opens the Plan tab.
   - *Migrate...* and *Roll Back...* first show the database and the migrations and ask. A
     database that is not on this computer gets a red warning. Roll Back undoes the newest
     applied migration. Once started, they cannot be cancelled: stopping halfway could leave a
     migration half applied.
+  - *Repair...* fixes the history: a migration whose file was deleted is removed from it (the
+    database keeps its changes), and for a failed one you say whether it took effect or you
+    restored the database. It shows the database and asks first, like Migrate.
   - *Doctor* checks the settings, the project and the database.
   - *Refresh* (tool window only) loads the open tab again.
 

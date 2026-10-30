@@ -98,6 +98,13 @@ public final class MigraxActions {
     }
   }
 
+  public static final class NewMigration extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxNewMigration.create(project);
+    }
+  }
+
   public static final class Plan extends Base {
     @Override
     void perform(Project project) {
@@ -126,6 +133,18 @@ public final class MigraxActions {
     @Override
     void perform(Project project) {
       MigraxDatabaseChange.rollback(project);
+    }
+  }
+
+  public static final class Repair extends Base {
+    @Override
+    String nothingToDo(MigraxHealth health) {
+      return health.nothingToRepair();
+    }
+
+    @Override
+    void perform(Project project) {
+      MigraxRepair.repair(project);
     }
   }
 

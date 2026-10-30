@@ -7,14 +7,17 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
+import com.intellij.ui.components.JBRadioButton;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.components.JBTextArea;
 import com.intellij.util.ui.JBUI;
 import java.awt.BorderLayout;
 import java.awt.Font;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.Action;
 import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +32,7 @@ final class MigraxConfirmDialog extends DialogWrapper {
   private final String question;
   private final @Nullable MigraxTarget target;
   private final List<String> migrations;
+  private final List<JBRadioButton> choices = new ArrayList<>();
   private final boolean warn;
 
   /**
@@ -43,7 +47,25 @@ final class MigraxConfirmDialog extends DialogWrapper {
       @Nullable MigraxTarget target,
       List<String> migrations,
       String okText) {
+    this(project, title, question, target, migrations, okText, List.of());
+  }
+
+  /** @param choices answers to pick one of, the first one selected; none when empty */
+  MigraxConfirmDialog(
+      Project project,
+      String title,
+      String question,
+      @Nullable MigraxTarget target,
+      List<String> migrations,
+      String okText,
+      List<String> choices) {
     super(project);
+    ButtonGroup group = new ButtonGroup();
+    for (String choice : choices) {
+      JBRadioButton button = new JBRadioButton(choice, this.choices.isEmpty());
+      group.add(button);
+      this.choices.add(button);
+    }
     this.question = question;
     this.target = target;
     this.migrations = migrations;
@@ -85,7 +107,23 @@ final class MigraxConfirmDialog extends DialogWrapper {
     JPanel panel = new JPanel(new BorderLayout(0, JBUI.scale(8)));
     panel.add(top, BorderLayout.NORTH);
     panel.add(scroll, BorderLayout.CENTER);
+    if (!choices.isEmpty()) {
+      JPanel answers = new JPanel();
+      answers.setLayout(new BoxLayout(answers, BoxLayout.Y_AXIS));
+      choices.forEach(answers::add);
+      panel.add(answers, BorderLayout.SOUTH);
+    }
     return panel;
+  }
+
+  /** The index of the picked choice; 0 when there are none. */
+  int choice() {
+    for (int i = 0; i < choices.size(); i++) {
+      if (choices.get(i).isSelected()) {
+        return i;
+      }
+    }
+    return 0;
   }
 
   private JComponent warning() {

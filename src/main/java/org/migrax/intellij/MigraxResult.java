@@ -1,11 +1,15 @@
 package org.migrax.intellij;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -126,6 +130,20 @@ final class MigraxResult {
     return text.isBlank()
         ? "The Migrax command failed (exit code " + exitCode + ")."
         : text.trim();
+  }
+
+  /** The strings in the list {@code key} of the JSON, such as "created"; null without it. */
+  static @Nullable List<String> strings(@Nullable JsonObject json, String key) {
+    if (json == null || !(json.get(key) instanceof JsonArray list)) {
+      return null;
+    }
+    List<String> strings = new ArrayList<>();
+    for (JsonElement element : list) {
+      if (element instanceof JsonPrimitive value && value.isString()) {
+        strings.add(value.getAsString());
+      }
+    }
+    return strings;
   }
 
   private static String text(JsonObject object, String key) {

@@ -52,6 +52,9 @@
       <action id="Migrax.Generate" class="org.migrax.intellij.MigraxActions$Generate"
               text="Generate Migration" icon="AllIcons.Actions.AddFile"
               description="Write the next migration from the entity changes"/>
+      <action id="Migrax.New" class="org.migrax.intellij.MigraxActions$NewMigration"
+              text="New Migration..." icon="AllIcons.General.Add"
+              description="Create an empty migration for hand-written SQL, such as a data change"/>
       <action id="Migrax.Plan" class="org.migrax.intellij.MigraxActions$Plan"
               text="Show Plan" icon="AllIcons.Actions.Preview"
               description="Show the SQL of the next migration"/>
@@ -62,6 +65,9 @@
       <action id="Migrax.Rollback" class="org.migrax.intellij.MigraxActions$Rollback"
               text="Roll Back..." icon="AllIcons.Actions.Rollback"
               description="Roll back the newest applied migration in the database"/>
+      <action id="Migrax.Repair" class="org.migrax.intellij.MigraxActions$Repair"
+              text="Repair..." icon="AllIcons.Toolwindows.ToolWindowBuild"
+              description="Fix the history of failed or missing migrations"/>
       <separator/>
       <action id="Migrax.Doctor" class="org.migrax.intellij.MigraxActions$Doctor"
               text="Doctor" icon="AllIcons.General.InspectionsOK"
@@ -73,11 +79,13 @@
               text="Refresh" icon="AllIcons.Actions.Refresh"
               description="Load the open tab of the Migrax tool window again"/>
       <separator/>
+      <reference ref="Migrax.New"/>
       <reference ref="Migrax.Generate"/>
       <reference ref="Migrax.Plan"/>
       <separator/>
       <reference ref="Migrax.Migrate"/>
       <reference ref="Migrax.Rollback"/>
+      <reference ref="Migrax.Repair"/>
       <separator/>
       <reference ref="Migrax.Doctor"/>
     </group>

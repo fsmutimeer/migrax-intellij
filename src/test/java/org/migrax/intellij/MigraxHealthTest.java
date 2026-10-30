@@ -94,6 +94,18 @@ public class MigraxHealthTest {
   }
 
   @Test
+  public void repairIsOnForFailedAndMissingMigrationsOnly() {
+    assertEquals(
+        "No failed or missing migrations at the last check",
+        MigraxHealth.of(status("applied,pending,outdated,changed,skipped"), 0, "")
+            .nothingToRepair());
+    for (String state : List.of("failed", "missing", "unknown")) {
+      assertNull(state, MigraxHealth.of(status("applied," + state), 0, "").nothingToRepair());
+    }
+    assertNull(MigraxHealth.unavailable("x").nothingToRepair());
+  }
+
+  @Test
   public void keepsEverythingOnWhenNotKnown() {
     MigraxHealth unknown = MigraxHealth.unavailable("The Migrax command was not found.");
     assertNull(unknown.nothingToMigrate());

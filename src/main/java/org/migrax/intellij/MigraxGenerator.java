@@ -135,32 +135,39 @@ final class MigraxGenerator {
     MigraxNotifications.info(project, "Created " + String.join(", ", files) + ".");
     MigraxToolWindowFactory.refreshStatus(project);
     Path root = MigraxHealthService.getInstance(project).knownRoot();
+    List<Path> paths = new ArrayList<>();
+    for (String file : files) {
+      Path migration = resolve(root, file);
+      if (migration != null) {
+        paths.add(migration);
+        paths.add(rollbackOf(migration));
+      }
+    }
+    open(project, paths);
+  }
+
+  /** Opens the files the command just wrote, skipping any that are not there. Editor thread. */
+  static void open(Project project, List<Path> paths) {
     // Finding the new files reads the disk: not on the editor thread.
     ApplicationManager.getApplication()
         .executeOnPooledThread(
             () -> {
               List<VirtualFile> found = new ArrayList<>();
-              for (String file : files) {
-                Path migration = resolve(root, file);
-                if (migration == null) {
-                  continue;
-                }
-                for (Path path : List.of(migration, rollbackOf(migration))) {
-                  VirtualFile virtual =
-                      LocalFileSystem.getInstance().refreshAndFindFileByNioFile(path);
-                  if (virtual != null) {
-                    found.add(virtual);
-                  }
+              for (Path path : paths) {
+                VirtualFile virtual =
+                    LocalFileSystem.getInstance().refreshAndFindFileByNioFile(path);
+                if (virtual != null) {
+                  found.add(virtual);
                 }
               }
               ApplicationManager.getApplication()
-                  .invokeLater(() -> open(found), project.getDisposed());
+                  .invokeLater(
+                      () -> {
+                        FileEditorManager editors = FileEditorManager.getInstance(project);
+                        found.forEach(file -> editors.openFile(file, true));
+                      },
+                      project.getDisposed());
             });
-  }
-
-  private void open(List<VirtualFile> files) {
-    FileEditorManager editors = FileEditorManager.getInstance(project);
-    files.forEach(file -> editors.openFile(file, true));
   }
 
   /** The command prints paths relative to the Migrax project folder, or absolute ones. */

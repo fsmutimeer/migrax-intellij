@@ -47,3 +47,7 @@ All notable changes to this plugin are listed here. The format follows
 - Buttons down the left side of the Migrax tool window with the same actions and Refresh,
   which replaces the Refresh button of each tab. Migrate, Roll Back and Generate are greyed
   out when the latest status says there is nothing to do.
+- New Migration: an empty migration and rollback script for hand-written SQL, opened in the
+  editor.
+- Repair: removes migrations whose file was deleted from the history, and records a failed
+  migration as applied or clears it to run again, after a dialog that shows the database.
