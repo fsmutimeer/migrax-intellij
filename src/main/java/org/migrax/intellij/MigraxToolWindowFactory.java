@@ -41,6 +41,27 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
         });
   }
 
+  /**
+   * Loads the Status tab again, which also refreshes the status bar entry and the margin icons;
+   * only those when the tool window was never opened. Editor thread.
+   */
+  static void refreshStatus(Project project) {
+    if (project.isDisposed()) {
+      return;
+    }
+    ToolWindow window = ToolWindowManager.getInstance(project).getToolWindow(ID);
+    Content content = window == null ? null : window.getContentManager().getContent(0);
+    if (content != null && content.getComponent() instanceof JBTabbedPane tabs) {
+      for (int i = 0; i < tabs.getTabCount(); i++) {
+        if (tabs.getComponentAt(i) instanceof MigraxStatusPanel status) {
+          status.refresh();
+          return;
+        }
+      }
+    }
+    MigraxHealthService.getInstance(project).refresh();
+  }
+
   @Override
   public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
     MigraxStatusPanel status = new MigraxStatusPanel(project);

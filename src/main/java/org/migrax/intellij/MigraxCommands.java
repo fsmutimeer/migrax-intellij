@@ -4,12 +4,13 @@ import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
 
-/** Starts the Migrax command for a project, for the tool window tabs. */
+/** Starts the Migrax command for a project, for the tool window tabs and the actions. */
 final class MigraxCommands {
 
   private MigraxCommands() {}
@@ -41,8 +42,35 @@ final class MigraxCommands {
       long timeoutMillis,
       Consumer<MigraxResult> onResult,
       Consumer<String> onProblem) {
-    new Task.Backgroundable(project, title, true) {
-      private MigraxResult result;
+    runEach(
+        project,
+        title,
+        List.of(args),
+        timeoutMillis,
+        true,
+        results -> onResult.accept(results.get(0)),
+        onProblem);
+  }
+
+  /**
+   * Runs the command once per argument list, one after the other, in one background task; see
+   * {@link #run}. A cancelled run ends the task: the runs after it count as cancelled.
+   *
+   * @param cancellable false for a command that changes the database: stopping it halfway could
+   *     leave a migration half applied, so once started it runs to the end (see {@link
+   *     MigraxCli#run(List, ProgressIndicator, boolean)})
+   * @param onResults one result per argument list, in their order
+   */
+  static void runEach(
+      Project project,
+      String title,
+      List<List<String>> runs,
+      long timeoutMillis,
+      boolean cancellable,
+      Consumer<List<MigraxResult>> onResults,
+      Consumer<String> onProblem) {
+    new Task.Backgroundable(project, title, cancellable) {
+      private final List<MigraxResult> results = new ArrayList<>();
       private String problem;
 
       @Override
@@ -59,7 +87,14 @@ final class MigraxCommands {
               "The Migrax command was not found. Set its path in Settings > Tools > Migrax.";
           return;
         }
-        result = new MigraxCli(launcher.get(), folder.get(), timeoutMillis).run(args, indicator);
+        MigraxCli cli = new MigraxCli(launcher.get(), folder.get(), timeoutMillis);
+        for (List<String> args : runs) {
+          MigraxResult result = cli.run(args, indicator, cancellable);
+          results.add(result);
+          if (result.cancelled()) {
+            return;
+          }
+        }
       }
 
       @Override
@@ -67,9 +102,12 @@ final class MigraxCommands {
         // Always report back, so a screen waiting for the answer is never left waiting.
         if (problem != null) {
           onProblem.accept(problem);
-        } else {
-          onResult.accept(result == null ? MigraxResult.cancelledRun() : result);
+          return;
         }
+        while (results.size() < runs.size()) {
+          results.add(MigraxResult.cancelledRun());
+        }
+        onResults.accept(results);
       }
     }.queue();
   }

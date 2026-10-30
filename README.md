@@ -22,10 +22,21 @@ do not have to leave the editor.
   its tooltip gives the rule, the message and the fix. The text in the editor is checked, also
   before you save it, with `migrax lint`.
 
+- A **Tools > Migrax** menu:
+  - *Generate Migration* writes the next migration and opens it with its rollback script.
+    When a change looks like a rename it asks "Did you rename ...?", so the data is kept, and
+    it asks before a migration that drops tables or columns.
+  - *Show Plan* opens the Plan tab.
+  - *Migrate...* and *Roll Back...* first show the database and the migrations and ask. A
+    database that is not on this computer gets a red warning. Roll Back undoes the newest
+    applied migration. Once started, they cannot be cancelled: stopping halfway could leave a
+    migration half applied.
+  - *Doctor* checks the settings, the project and the database.
+
 ## Planned
 
 - A quick action on the margin icon to generate the migration.
-- Menu actions for generate, plan, migrate and rollback.
+- Squash and drift in the menu, and a run configuration for Migrate.
 
 ## Known limitations
 
@@ -39,6 +50,8 @@ do not have to leave the editor.
 - Lint marks show about a second after you stop typing (each check starts the command). The
   plugin does not read where migrations are configured: it checks `.sql` files in the Migrax
   project folder, skipping `rollback` folders and build output.
+- Migrate and Roll Back work on the database in the project's settings. Other environments
+  are shown in the Environments tab but cannot be migrated from the IDE.
 - The plugin finds the command through the path in Settings > Tools > Migrax, or on `PATH`.
 
 The plugin does not contain migration logic. It runs the `migrax` command line and shows its

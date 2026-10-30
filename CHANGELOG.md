@@ -40,3 +40,7 @@ All notable changes to this plugin are listed here. The format follows
   Migrax.
 - The margin icon also shows next to Kotlin entity classes (with the Kotlin plugin, in K1 and
   K2 mode).
+- Tools > Migrax menu: Generate Migration (asks about renames and drops, then opens the new
+  migration and its rollback script), Show Plan, Migrate, Roll Back and Doctor. Migrate and
+  Roll Back show the database and the migrations first and ask, with a red warning for a
+  database that is not on this computer.

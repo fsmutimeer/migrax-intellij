@@ -65,6 +65,17 @@ final class MigraxCli {
    * @param indicator checked while waiting and while the process runs; may be null
    */
   MigraxResult run(List<String> args, @Nullable ProgressIndicator indicator) {
+    return run(args, indicator, true);
+  }
+
+  /**
+   * Like {@link #run(List, ProgressIndicator)}; with {@code stopOnCancel} false the indicator
+   * only ends the wait for the folder's turn. Once the process runs it is never stopped, also
+   * not when the IDE cancels the task because the project closes: a command that changes the
+   * database must not end halfway.
+   */
+  MigraxResult run(
+      List<String> args, @Nullable ProgressIndicator indicator, boolean stopOnCancel) {
     try {
       if (!acquire(indicator)) {
         return MigraxResult.cancelledRun();
@@ -74,7 +85,7 @@ final class MigraxCli {
       return MigraxResult.cancelledRun();
     }
     try {
-      return execute(args, indicator);
+      return execute(args, stopOnCancel ? indicator : null);
     } finally {
       oneAtATime.release();
     }
