@@ -18,6 +18,9 @@ do not have to leave the editor.
   can turn it off in Settings > Editor > General > Gutter Icons. It needs a Migrax command that
   names the entity class in `check --json` (the next Migrax release), and entities read with
   Hibernate 5 or newer or by annotation scanning.
+- Lint findings inside migration files: a risky statement is underlined (red for errors) and
+  its tooltip gives the rule, the message and the fix. The text in the editor is checked, also
+  before you save it, with `migrax lint`.
 
 ## Planned
 
@@ -30,6 +33,9 @@ do not have to leave the editor.
 - The status bar entry and the margin icons refresh when the project opens, when you click the
   status bar entry and when you refresh the Status tab, not yet when you save a file.
 - In a single-table inheritance hierarchy the icon is on the root class.
+- Lint marks show about a second after you stop typing (each check starts the command). The
+  plugin does not read where migrations are configured: it checks `.sql` files in the Migrax
+  project folder, skipping `rollback` folders and build output.
 - The plugin finds the command through the path in Settings > Tools > Migrax, or on `PATH`.
 
 The plugin does not contain migration logic. It runs the `migrax` command line and shows its

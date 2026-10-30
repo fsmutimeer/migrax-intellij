@@ -6,8 +6,12 @@ import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
 
-/** One lint finding as {@code migrax plan --json} and {@code migrax lint --json} print it. */
-record MigraxFinding(String code, String severity, String file, String message, String fix) {
+/**
+ * One lint finding as {@code migrax plan --json} and {@code migrax lint --json} print it. The
+ * {@code sql} is the start of the statement without comments and with whitespace collapsed.
+ */
+record MigraxFinding(
+    String code, String severity, String file, String message, String fix, String sql) {
 
   /** Reads a JSON array of findings; anything that is not an object is skipped. */
   static List<MigraxFinding> listFrom(JsonElement array) {
@@ -21,7 +25,8 @@ record MigraxFinding(String code, String severity, String file, String message, 
                   text(f, "severity"),
                   text(f, "file"),
                   text(f, "message"),
-                  text(f, "fix")));
+                  text(f, "fix"),
+                  text(f, "sql")));
         }
       }
     }

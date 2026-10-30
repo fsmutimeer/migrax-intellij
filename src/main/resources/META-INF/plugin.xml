@@ -7,8 +7,8 @@
     Companion for <a href="https://migrax.org">Migrax</a>, which generates SQL migrations from
     your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA with the state of
     the migrations, the SQL of the next migration, lint findings and the configured databases,
-    a status bar entry, and an icon next to entity classes whose changes are not in a migration
-    yet. Needs the Migrax command line.
+    a status bar entry, an icon next to entity classes whose changes are not in a migration
+    yet, and lint findings marked inside migration files. Needs the Migrax command line.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
@@ -25,6 +25,10 @@
     <codeInsight.lineMarkerProvider
         language="JAVA"
         implementationClass="org.migrax.intellij.MigraxEntityLineMarkerProvider"/>
+    <!-- Any language: SQL files are plain text without the Database plugin. -->
+    <externalAnnotator
+        language=""
+        implementationClass="org.migrax.intellij.MigraxSqlLintAnnotator"/>
     <toolWindow id="Migrax"
                 anchor="bottom"
                 icon="/icons/migrax.svg"

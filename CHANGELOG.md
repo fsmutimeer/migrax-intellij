@@ -31,3 +31,6 @@ All notable changes to this plugin are listed here. The format follows
 - An icon in the editor's margin next to a Java entity class whose changes are not in a
   migration yet, with the changes in its tooltip; a click opens the Plan tab. Needs a Migrax
   command that names the entity class in `check --json`.
+- Lint findings marked inside migration files: the statement is underlined and its tooltip
+  gives the rule, the message and the fix. The text in the editor is checked, also before it is
+  saved. Rollback scripts and files outside the Migrax project folder are skipped.

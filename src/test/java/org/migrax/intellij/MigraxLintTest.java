@@ -30,6 +30,7 @@ public class MigraxLintTest {
     assertEquals(1, lint.findings().size());
     MigraxFinding f = lint.findings().get(0);
     assertEquals("db/migration/V2__x.sql", f.file());
+    assertEquals("s", f.sql());
     assertEquals("MX001 error: blocks the table\n  Fix: use an index concurrently", f.describe());
     assertEquals("1 file checked, 1 finding.", lint.summary());
   }
