@@ -34,8 +34,8 @@ public final class MigraxHealthService implements Disposable {
 
   private final Project project;
   private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
-  // health and running are only used on the editor thread: refresh() and the callbacks.
-  private MigraxHealth health = MigraxHealth.unavailable("Not checked yet");
+  // Written on the editor thread only (refresh() and the callbacks); actions read it anywhere.
+  private volatile MigraxHealth health = MigraxHealth.unavailable("Not checked yet");
   private boolean running;
   // A file changed while a check was running: that check may have missed it.
   private boolean againWhenDone;
@@ -96,7 +96,11 @@ public final class MigraxHealthService implements Disposable {
     afterChange.addRequest(this::refreshAfterChange, AFTER_CHANGE_DELAY_MILLIS);
   }
 
-  private void refreshAfterChange() {
+  /**
+   * Asks the command again after something changed; while a check is running, once more when it
+   * is done, as that one may have started before the change. Editor thread.
+   */
+  void refreshAfterChange() {
     if (running) {
       againWhenDone = true;
     } else {
@@ -109,6 +113,11 @@ public final class MigraxHealthService implements Disposable {
   Path knownRoot() {
     Path known = root;
     return detected && known != null ? known.toAbsolutePath().normalize() : null;
+  }
+
+  /** The latest health; any thread. */
+  MigraxHealth health() {
+    return health;
   }
 
   /** True once a Migrax project was found in this IDE project (see {@link #findRoot}). */

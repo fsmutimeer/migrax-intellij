@@ -1,6 +1,5 @@
 package org.migrax.intellij;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
@@ -11,7 +10,6 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -22,7 +20,8 @@ final class MigraxStatusPanel extends JPanel {
 
   private final Project project;
   private final JBLabel summary = new JBLabel(" ");
-  private final JButton refresh = new JButton("Refresh", AllIcons.Actions.Refresh);
+  // The command runs; Refresh in the toolbar waits for it.
+  private boolean loading;
   private final DefaultTableModel model =
       new DefaultTableModel(new Object[] {"Migration", "State", "Detail"}, 0) {
         @Override
@@ -44,16 +43,18 @@ final class MigraxStatusPanel extends JPanel {
     JPanel top = new JPanel(new BorderLayout(JBUI.scale(8), 0));
     top.setBorder(JBUI.Borders.empty(4, 8));
     top.add(summary, BorderLayout.CENTER);
-    top.add(refresh, BorderLayout.EAST);
     add(top, BorderLayout.NORTH);
     add(new JBScrollPane(table), BorderLayout.CENTER);
+  }
 
-    refresh.addActionListener(e -> refresh());
+  /** True while the command runs. */
+  boolean isLoading() {
+    return loading;
   }
 
   /** Runs {@code migrax status --json} in the background and shows the result. */
   void refresh() {
-    refresh.setEnabled(false);
+    loading = true;
     summary.setText("Reading migrations...");
     MigraxCommands.run(
         project,
@@ -68,7 +69,7 @@ final class MigraxStatusPanel extends JPanel {
       return;
     }
     if (result.cancelled()) {
-      refresh.setEnabled(true);
+      loading = false;
       summary.setText("Cancelled.");
       return;
     }
@@ -85,7 +86,7 @@ final class MigraxStatusPanel extends JPanel {
   }
 
   private void show(String message, List<MigraxStatus.Row> rows) {
-    refresh.setEnabled(true);
+    loading = false;
     summary.setText(message);
     model.setRowCount(0);
     shown.clear();

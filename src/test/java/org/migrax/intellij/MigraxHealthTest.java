@@ -1,8 +1,10 @@
 package org.migrax.intellij;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
 import org.junit.Test;
 
 public class MigraxHealthTest {
@@ -66,5 +68,41 @@ public class MigraxHealthTest {
                     + "\"conflicts\":[]}")));
     assertEquals(-1, MigraxHealth.changesIn(MigraxResult.parseJsonValue("{\"ok\":false}")));
     assertEquals(-1, MigraxHealth.changesIn(null));
+  }
+
+  @Test
+  public void greysOutWhatHasNothingToDo() {
+    MigraxHealth synced = MigraxHealth.of(status("applied,skipped"), 0, "");
+    assertEquals("No pending migrations at the last check", synced.nothingToMigrate());
+    assertNull(synced.nothingToRollBack());
+    assertEquals("No entity changes at the last check", synced.nothingToGenerate());
+
+    MigraxHealth fresh = MigraxHealth.of(status("pending,skipped"), 2, "");
+    assertNull(fresh.nothingToMigrate());
+    assertEquals("No applied migrations at the last check", fresh.nothingToRollBack());
+    assertNull(fresh.nothingToGenerate());
+  }
+
+  @Test
+  public void otherStatesKeepTheActionsOn() {
+    // A changed repeatable migration runs again; a failed one is repaired or resumed.
+    for (String state : List.of("outdated", "failed", "changed", "missing", "unknown")) {
+      MigraxHealth health = MigraxHealth.of(status("applied," + state), 0, "");
+      assertNull(state, health.nothingToMigrate());
+      assertNull(state, health.nothingToRollBack());
+    }
+  }
+
+  @Test
+  public void keepsEverythingOnWhenNotKnown() {
+    MigraxHealth unknown = MigraxHealth.unavailable("The Migrax command was not found.");
+    assertNull(unknown.nothingToMigrate());
+    assertNull(unknown.nothingToRollBack());
+    assertNull(unknown.nothingToGenerate());
+    // No migrations yet: the first Generate writes the baseline of an existing database.
+    MigraxStatus none = MigraxStatus.from(MigraxResult.parseJsonValue("{\"migrations\":[]}"));
+    assertNull(MigraxHealth.of(none, 0, "").nothingToGenerate());
+    // Entity changes not checked.
+    assertNull(MigraxHealth.of(status("applied"), -1, "x").nothingToGenerate());
   }
 }

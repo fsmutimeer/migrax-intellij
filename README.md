@@ -22,7 +22,9 @@ do not have to leave the editor.
   its tooltip gives the rule, the message and the fix. The text in the editor is checked, also
   before you save it, with `migrax lint`.
 
-- A **Tools > Migrax** menu:
+- Buttons down the left side of the Migrax tool window, and the same actions in a
+  **Tools > Migrax** menu. An action with nothing to do (no pending migrations, nothing
+  applied, no entity changes) is greyed out and its tooltip says why:
   - *Generate Migration* writes the next migration and opens it with its rollback script.
     When a change looks like a rename it asks "Did you rename ...?", so the data is kept, and
     it asks before a migration that drops tables or columns.
@@ -32,6 +34,7 @@ do not have to leave the editor.
     applied migration. Once started, they cannot be cancelled: stopping halfway could leave a
     migration half applied.
   - *Doctor* checks the settings, the project and the database.
+  - *Refresh* (tool window only) loads the open tab again.
 
 ## Planned
 

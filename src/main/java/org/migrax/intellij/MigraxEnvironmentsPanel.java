@@ -1,6 +1,5 @@
 package org.migrax.intellij;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.JBSplitter;
@@ -14,7 +13,6 @@ import java.awt.Component;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -28,7 +26,8 @@ final class MigraxEnvironmentsPanel extends JPanel {
 
   private final Project project;
   private final JBLabel summary = new JBLabel(" ");
-  private final JButton refresh = new JButton("Refresh", AllIcons.Actions.Refresh);
+  // The command runs; Refresh in the toolbar waits for it.
+  private boolean loading;
   private final List<MigraxEnvironments.Environment> shown = new ArrayList<>();
   private final DefaultTableModel model =
       new DefaultTableModel(
@@ -55,15 +54,12 @@ final class MigraxEnvironmentsPanel extends JPanel {
     JPanel top = new JPanel(new BorderLayout(JBUI.scale(8), 0));
     top.setBorder(JBUI.Borders.empty(4, 8));
     top.add(summary, BorderLayout.CENTER);
-    top.add(refresh, BorderLayout.EAST);
     add(top, BorderLayout.NORTH);
 
     JBSplitter split = new JBSplitter(true, 0.5f);
     split.setFirstComponent(new JBScrollPane(table));
     split.setSecondComponent(new JBScrollPane(details));
     add(split, BorderLayout.CENTER);
-
-    refresh.addActionListener(e -> refresh());
   }
 
   /** True once a refresh was started, so the tab loads itself only the first time. */
@@ -71,9 +67,14 @@ final class MigraxEnvironmentsPanel extends JPanel {
     return ran;
   }
 
+  /** True while the command runs. */
+  boolean isLoading() {
+    return loading;
+  }
+
   /** Runs {@code migrax environments --json} in the background and shows the result. */
   void refresh() {
-    refresh.setEnabled(false);
+    loading = true;
     summary.setText("Asking the environments...");
     ran = true;
     MigraxCommands.run(
@@ -115,7 +116,7 @@ final class MigraxEnvironmentsPanel extends JPanel {
   }
 
   private void finish(String text) {
-    refresh.setEnabled(true);
+    loading = false;
     summary.setText(text);
   }
 

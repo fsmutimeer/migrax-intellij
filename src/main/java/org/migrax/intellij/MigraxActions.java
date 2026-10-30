@@ -4,13 +4,15 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * The actions of the Tools > Migrax menu, registered in plugin.xml. Shown only in projects that
- * use Migrax. Each one starts its command in the background.
+ * The actions of the Tools > Migrax menu and the tool window's toolbar, registered in plugin.xml.
+ * Shown only in projects that use Migrax. Each one starts its command in the background.
  */
 public final class MigraxActions {
 
@@ -35,7 +37,10 @@ public final class MigraxActions {
     }
   }
 
-  /** Shown and enabled only once a Migrax project was found. */
+  /**
+   * Shown only once a Migrax project was found, and greyed out when the latest status says there
+   * is nothing to do; the description then says why.
+   */
   abstract static class Base extends AnAction implements DumbAware {
 
     @Override
@@ -45,7 +50,22 @@ public final class MigraxActions {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-      e.getPresentation().setEnabledAndVisible(usesMigrax(e));
+      Presentation presentation = e.getPresentation();
+      if (!usesMigrax(e)) {
+        presentation.setEnabledAndVisible(false);
+        return;
+      }
+      String reason = nothingToDo(MigraxHealthService.getInstance(e.getProject()).health());
+      presentation.setVisible(true);
+      presentation.setEnabled(reason == null);
+      presentation.setDescription(
+          reason == null ? getTemplatePresentation().getDescription() : reason);
+    }
+
+    /** Why the action has nothing to do now, or null. */
+    @Nullable
+    String nothingToDo(MigraxHealth health) {
+      return null;
     }
 
     @Override
@@ -59,7 +79,19 @@ public final class MigraxActions {
     abstract void perform(Project project);
   }
 
+  public static final class Refresh extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxToolWindowFactory.refreshOpenTab(project);
+    }
+  }
+
   public static final class Generate extends Base {
+    @Override
+    String nothingToDo(MigraxHealth health) {
+      return health.nothingToGenerate();
+    }
+
     @Override
     void perform(Project project) {
       MigraxGenerator.generate(project);
@@ -75,12 +107,22 @@ public final class MigraxActions {
 
   public static final class Migrate extends Base {
     @Override
+    String nothingToDo(MigraxHealth health) {
+      return health.nothingToMigrate();
+    }
+
+    @Override
     void perform(Project project) {
       MigraxDatabaseChange.migrate(project);
     }
   }
 
   public static final class Rollback extends Base {
+    @Override
+    String nothingToDo(MigraxHealth health) {
+      return health.nothingToRollBack();
+    }
+
     @Override
     void perform(Project project) {
       MigraxDatabaseChange.rollback(project);

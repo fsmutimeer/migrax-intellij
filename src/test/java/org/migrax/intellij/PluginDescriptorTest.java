@@ -6,6 +6,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.junit.Test;
 import org.w3c.dom.Document;
@@ -33,10 +35,27 @@ public class PluginDescriptorTest {
     try (InputStream in = getClass().getResourceAsStream("/META-INF/plugin.xml")) {
       Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(in);
       NodeList actions = doc.getElementsByTagName("action");
-      assertEquals(5, actions.getLength());
+      assertEquals(6, actions.getLength());
+      Set<String> ids = new HashSet<>();
       for (int i = 0; i < actions.getLength(); i++) {
-        Class<?> action = Class.forName(((Element) actions.item(i)).getAttribute("class"));
+        Element element = (Element) actions.item(i);
+        ids.add(element.getAttribute("id"));
+        Class<?> action = Class.forName(element.getAttribute("class"));
         assertTrue(action.getName(), AnAction.class.isAssignableFrom(action));
+      }
+      // The tool window builds its toolbar from this group; the toolbar shows the menu's
+      // actions by reference.
+      NodeList groups = doc.getElementsByTagName("group");
+      boolean toolbar = false;
+      for (int i = 0; i < groups.getLength(); i++) {
+        toolbar |= "Migrax.ToolWindowToolbar".equals(((Element) groups.item(i)).getAttribute("id"));
+      }
+      assertTrue(toolbar);
+      NodeList references = doc.getElementsByTagName("reference");
+      assertEquals(5, references.getLength());
+      for (int i = 0; i < references.getLength(); i++) {
+        String ref = ((Element) references.item(i)).getAttribute("ref");
+        assertTrue(ref, ids.contains(ref));
       }
     }
   }

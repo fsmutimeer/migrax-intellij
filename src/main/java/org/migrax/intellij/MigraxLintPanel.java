@@ -1,6 +1,5 @@
 package org.migrax.intellij;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -20,7 +19,6 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -32,7 +30,8 @@ final class MigraxLintPanel extends JPanel {
   private final Project project;
   private final JBLabel summary = new JBLabel(" ");
   private final JBCheckBox all = new JBCheckBox("All migrations");
-  private final JButton refresh = new JButton("Refresh", AllIcons.Actions.Refresh);
+  // The command runs; Refresh in the toolbar waits for it.
+  private boolean loading;
   private final List<MigraxFinding> shown = new ArrayList<>();
   private final DefaultTableModel model =
       new DefaultTableModel(new Object[] {"Code", "Severity", "File", "Message"}, 0) {
@@ -54,7 +53,6 @@ final class MigraxLintPanel extends JPanel {
 
     JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, JBUI.scale(8), 0));
     buttons.add(all);
-    buttons.add(refresh);
     JPanel top = new JPanel(new BorderLayout(JBUI.scale(8), 0));
     top.setBorder(JBUI.Borders.empty(4, 8));
     top.add(summary, BorderLayout.CENTER);
@@ -62,7 +60,6 @@ final class MigraxLintPanel extends JPanel {
     add(top, BorderLayout.NORTH);
     add(new JBScrollPane(table), BorderLayout.CENTER);
 
-    refresh.addActionListener(e -> refresh());
     all.addActionListener(e -> refresh());
     table.addMouseListener(
         new MouseAdapter() {
@@ -79,6 +76,11 @@ final class MigraxLintPanel extends JPanel {
   /** True once a refresh was started, so the tab loads itself only the first time. */
   boolean hasRun() {
     return ran;
+  }
+
+  /** True while the command runs. */
+  boolean isLoading() {
+    return loading;
   }
 
   /** Runs {@code migrax lint --json} in the background and shows the result. */
@@ -123,9 +125,9 @@ final class MigraxLintPanel extends JPanel {
     fill(List.of());
   }
 
-  /** The checkbox is locked with the button, so two runs never race for the table. */
+  /** The checkbox is locked while a run loads, so two runs never race for the table. */
   private void setBusy(boolean busy) {
-    refresh.setEnabled(!busy);
+    loading = busy;
     all.setEnabled(!busy);
   }
 

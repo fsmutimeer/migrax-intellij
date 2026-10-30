@@ -1,6 +1,5 @@
 package org.migrax.intellij;
 
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorFontType;
 import com.intellij.openapi.project.Project;
@@ -11,7 +10,6 @@ import com.intellij.util.ui.JBUI;
 import java.awt.BorderLayout;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.swing.JButton;
 import javax.swing.JPanel;
 
 /** The Plan tab: the SQL of the next migration, filled by {@code migrax plan --json}. */
@@ -21,7 +19,8 @@ final class MigraxPlanPanel extends JPanel {
 
   private final Project project;
   private final JBLabel summary = new JBLabel(" ");
-  private final JButton refresh = new JButton("Refresh", AllIcons.Actions.Refresh);
+  // The command runs; Refresh in the toolbar waits for it.
+  private boolean loading;
   private final JBTextArea sql = new JBTextArea();
   private final JBTextArea lint = new JBTextArea();
   private final JBScrollPane lintScroll = new JBScrollPane(lint);
@@ -41,12 +40,9 @@ final class MigraxPlanPanel extends JPanel {
     JPanel top = new JPanel(new BorderLayout(JBUI.scale(8), 0));
     top.setBorder(JBUI.Borders.empty(4, 8));
     top.add(summary, BorderLayout.CENTER);
-    top.add(refresh, BorderLayout.EAST);
     add(top, BorderLayout.NORTH);
     add(new JBScrollPane(sql), BorderLayout.CENTER);
     add(lintScroll, BorderLayout.SOUTH);
-
-    refresh.addActionListener(e -> refresh());
   }
 
   /** True once a refresh was started, so the tab loads itself only the first time. */
@@ -54,9 +50,14 @@ final class MigraxPlanPanel extends JPanel {
     return ran;
   }
 
+  /** True while the command runs. */
+  boolean isLoading() {
+    return loading;
+  }
+
   /** Runs {@code migrax plan --json} in the background and shows the result. */
   void refresh() {
-    refresh.setEnabled(false);
+    loading = true;
     summary.setText("Planning...");
     // Not marked as run when the command could not start, so the tab tries again once the
     // path is fixed in the settings. Planning may build the project first: allow ten minutes.
@@ -78,7 +79,7 @@ final class MigraxPlanPanel extends JPanel {
       return;
     }
     if (result.cancelled()) {
-      refresh.setEnabled(true);
+      loading = false;
       summary.setText("Cancelled.");
       return;
     }
@@ -88,7 +89,7 @@ final class MigraxPlanPanel extends JPanel {
       showError(result.errorMessage());
       return;
     }
-    refresh.setEnabled(true);
+    loading = false;
     summary.setText(plan.summary());
     sql.setText(plan.sqlText());
     sql.setCaretPosition(0);
@@ -99,7 +100,7 @@ final class MigraxPlanPanel extends JPanel {
   }
 
   private void showError(String message) {
-    refresh.setEnabled(true);
+    loading = false;
     summary.setText(message);
     sql.setText("");
     lint.setText("");

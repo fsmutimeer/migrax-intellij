@@ -44,3 +44,6 @@ All notable changes to this plugin are listed here. The format follows
   migration and its rollback script), Show Plan, Migrate, Roll Back and Doctor. Migrate and
   Roll Back show the database and the migrations first and ask, with a red warning for a
   database that is not on this computer.
+- Buttons down the left side of the Migrax tool window with the same actions and Refresh,
+  which replaces the Refresh button of each tab. Migrate, Roll Back and Generate are greyed
+  out when the latest status says there is nothing to do.

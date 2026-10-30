@@ -8,9 +8,9 @@
     your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA with the state of
     the migrations, the SQL of the next migration, lint findings and the configured databases,
     a status bar entry, an icon next to entity classes (Java and Kotlin) whose changes are not
-    in a migration yet, lint findings marked inside migration files, and a Tools > Migrax
-    menu to generate migrations, migrate, roll back and run the doctor. Needs the Migrax
-    command line.
+    in a migration yet, lint findings marked inside migration files, and a toolbar and a
+    Tools > Migrax menu to generate migrations, migrate, roll back and run the doctor. Needs
+    the Migrax command line.
   ]]></description>
 
   <depends>com.intellij.modules.platform</depends>
@@ -50,19 +50,36 @@
            popup="true" icon="/icons/migrax.svg">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
       <action id="Migrax.Generate" class="org.migrax.intellij.MigraxActions$Generate"
-              text="Generate Migration"
+              text="Generate Migration" icon="AllIcons.Actions.AddFile"
               description="Write the next migration from the entity changes"/>
       <action id="Migrax.Plan" class="org.migrax.intellij.MigraxActions$Plan"
-              text="Show Plan" description="Show the SQL of the next migration"/>
+              text="Show Plan" icon="AllIcons.Actions.Preview"
+              description="Show the SQL of the next migration"/>
       <separator/>
       <action id="Migrax.Migrate" class="org.migrax.intellij.MigraxActions$Migrate"
-              text="Migrate..." description="Apply the pending migrations to the database"/>
+              text="Migrate..." icon="AllIcons.Actions.Execute"
+              description="Apply the pending migrations to the database"/>
       <action id="Migrax.Rollback" class="org.migrax.intellij.MigraxActions$Rollback"
-              text="Roll Back..."
+              text="Roll Back..." icon="AllIcons.Actions.Rollback"
               description="Roll back the newest applied migration in the database"/>
       <separator/>
       <action id="Migrax.Doctor" class="org.migrax.intellij.MigraxActions$Doctor"
-              text="Doctor" description="Check the Migrax settings, the project and the database"/>
+              text="Doctor" icon="AllIcons.General.InspectionsOK"
+              description="Check the Migrax settings, the project and the database"/>
+    </group>
+    <!-- The buttons down the left of the Migrax tool window: the menu's actions and Refresh. -->
+    <group id="Migrax.ToolWindowToolbar">
+      <action id="Migrax.Refresh" class="org.migrax.intellij.MigraxActions$Refresh"
+              text="Refresh" icon="AllIcons.Actions.Refresh"
+              description="Load the open tab of the Migrax tool window again"/>
+      <separator/>
+      <reference ref="Migrax.Generate"/>
+      <reference ref="Migrax.Plan"/>
+      <separator/>
+      <reference ref="Migrax.Migrate"/>
+      <reference ref="Migrax.Rollback"/>
+      <separator/>
+      <reference ref="Migrax.Doctor"/>
     </group>
   </actions>
 
