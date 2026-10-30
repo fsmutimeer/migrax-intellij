@@ -60,3 +60,7 @@ All notable changes to this plugin are listed here. The format follows
 - Verify and Report under More: apply every migration to a throwaway database and check it, or
   open an HTML report of the schema, migrations, lint findings and drift.
 - A click on the margin icon next to an entity offers Generate Migration and Show Plan.
+- Status tab: double-click a migration to open it; the right-click menu also opens its rollback
+  script and copies its file name.
+- Set Up Migrax: in a project without Migrax, creates its folders in the chosen service folder
+  and shows what Migrax detected.

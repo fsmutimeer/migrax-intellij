@@ -20,6 +20,11 @@ final class MigraxStatus {
       return schema.isEmpty() ? version : schema + ": " + version;
     }
 
+    /** False for a missing migration: it is in the history, its file was deleted. */
+    boolean hasFile() {
+      return !state.equals("missing") && !version.isEmpty();
+    }
+
     /** Failed, changed and missing migrations need the user's attention. */
     boolean isProblem() {
       return state.equals("failed") || state.equals("changed") || state.equals("missing");

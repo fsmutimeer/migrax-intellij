@@ -8,9 +8,10 @@ do not have to leave the editor.
 
 ## What works today
 
-- A **Migrax** tool window with the tabs Status (migrations and their state), Plan (the SQL of
-  the next migration), Lint (findings, double-click opens the file) and Environments (every
-  configured database).
+- A **Migrax** tool window with the tabs Status (migrations and their state; double-click
+  opens the migration, right-click also opens its rollback script), Plan (the SQL of the next
+  migration), Lint (findings, double-click opens the file) and Environments (every configured
+  database).
 - A status bar entry ("Migrax: 2 pending", "Migrax: in sync"), shown only in projects that use
   Migrax.
 - An icon in the editor's margin next to a Java or Kotlin entity class with changes that are
@@ -26,6 +27,9 @@ do not have to leave the editor.
 - Buttons down the left side of the Migrax tool window, and the same actions in a
   **Tools > Migrax** menu. An action with nothing to do (no pending migrations, nothing
   applied, no entity changes) is greyed out and its tooltip says why:
+  - *Set Up Migrax...* (only in a project without Migrax yet, also as a link in the Status
+    tab) asks for the service's folder, creates the `.migrax` and migration folders there and
+    shows what Migrax detected: build tool, entity package, database and naming.
   - *Generate Migration* writes the next migration and opens it with its rollback script.
     When a change looks like a rename it asks "Did you rename ...?", so the data is kept, and
     it asks before a migration that drops tables or columns. By default it keeps a backup of
@@ -63,6 +67,8 @@ do not have to leave the editor.
 ## Known limitations
 
 - With several Migrax projects below one IDE project, the first one found is used.
+  Set Up Migrax is offered only while there is none, so set up a further service in the
+  terminal (`migrax init`) or open it as its own project.
 - The status bar entry and the margin icons refresh when the project opens, about 5 seconds
   after an entity, migration or settings file changes (saved, or changed on disk), when you
   click the status bar entry and when you refresh the Status tab. That check may build the

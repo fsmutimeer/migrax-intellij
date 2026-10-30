@@ -23,7 +23,10 @@ public final class MigraxActions {
     return project != null && MigraxHealthService.getInstance(project).isDetected();
   }
 
-  /** The Tools > Migrax submenu; a group with hidden actions would still show, greyed out. */
+  /**
+   * The Tools > Migrax submenu: in a project without Migrax it holds only Set Up Migrax. A group
+   * with hidden actions would still show, greyed out.
+   */
   public static final class Menu extends DefaultActionGroup implements DumbAware {
 
     @Override
@@ -33,7 +36,32 @@ public final class MigraxActions {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-      e.getPresentation().setEnabledAndVisible(usesMigrax(e));
+      e.getPresentation().setEnabledAndVisible(e.getProject() != null);
+    }
+  }
+
+  /**
+   * Set Up Migrax: shown only while no Migrax project was found, so it is gone once init made
+   * one. Until the first check after opening the project it shows in Migrax projects too.
+   */
+  public static final class Init extends AnAction implements DumbAware {
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+      return ActionUpdateThread.BGT;
+    }
+
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+      e.getPresentation().setEnabledAndVisible(e.getProject() != null && !usesMigrax(e));
+    }
+
+    @Override
+    public void actionPerformed(@NotNull AnActionEvent e) {
+      Project project = e.getProject();
+      if (project != null) {
+        MigraxInit.run(project);
+      }
     }
   }
 

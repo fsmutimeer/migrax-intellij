@@ -1,21 +1,38 @@
 package org.migrax.intellij;
 
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
+import com.intellij.openapi.ide.CopyPasteManager;
+import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.ui.JBColor;
+import com.intellij.ui.PopupHandler;
+import com.intellij.ui.SimpleTextAttributes;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBScrollPane;
 import com.intellij.ui.table.JBTable;
 import com.intellij.util.ui.JBUI;
 import java.awt.BorderLayout;
 import java.awt.Component;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import javax.swing.JPanel;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-/** The Status tab: every migration with its state, filled by {@code migrax status --json}. */
+/**
+ * The Status tab: every migration with its state, filled by {@code migrax status --json}. A
+ * double-click opens the migration; the right-click menu also opens its rollback script.
+ */
 final class MigraxStatusPanel extends JPanel {
 
   private final Project project;
@@ -45,6 +62,50 @@ final class MigraxStatusPanel extends JPanel {
     top.add(summary, BorderLayout.CENTER);
     add(top, BorderLayout.NORTH);
     add(new JBScrollPane(table), BorderLayout.CENTER);
+
+    table.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mousePressed(MouseEvent e) {
+            // The right-click menu works on the row under the mouse, as in the Project view.
+            int row = table.rowAtPoint(e.getPoint());
+            if (SwingUtilities.isRightMouseButton(e) && row >= 0) {
+              table.setRowSelectionInterval(row, row);
+            }
+          }
+
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            // Not on empty space below the rows, which keeps the old selection.
+            MigraxStatus.Row row = table.rowAtPoint(e.getPoint()) < 0 ? null : selected();
+            if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e) && row != null) {
+              open(row, false);
+            }
+          }
+        });
+    DefaultActionGroup menu = new DefaultActionGroup();
+    menu.add(new RowAction("Open Migration", true, row -> open(row, false)));
+    menu.add(new RowAction("Open Rollback Script", true, row -> open(row, true)));
+    menu.addSeparator();
+    menu.add(
+        new RowAction(
+            "Copy File Name",
+            // A missing migration has no file left; its name can still be copied.
+            false,
+            row -> CopyPasteManager.getInstance().setContents(new StringSelection(row.version()))));
+    PopupHandler.installPopupMenu(table, menu, "MigraxStatusPopup");
+  }
+
+  /** The selected migration, or null. */
+  private @Nullable MigraxStatus.Row selected() {
+    int row = table.getSelectedRow();
+    return row < 0 ? null : shown.get(table.convertRowIndexToModel(row));
+  }
+
+  private void open(MigraxStatus.Row row, boolean rollback) {
+    if (row.hasFile()) {
+      MigraxMigrationFiles.open(project, row.version(), rollback);
+    }
   }
 
   /** True while the command runs. */
@@ -93,6 +154,49 @@ final class MigraxStatusPanel extends JPanel {
     shown.addAll(rows);
     for (MigraxStatus.Row row : rows) {
       model.addRow(new Object[] {row.label(), row.state(), row.detail()});
+    }
+    if (MigraxHealthService.getInstance(project).isDetected()) {
+      table.getEmptyText().setText("Nothing to show yet");
+    } else {
+      table.getEmptyText().setText("This project does not use Migrax yet.");
+      table
+          .getEmptyText()
+          .appendSecondaryText(
+              "Set up Migrax",
+              SimpleTextAttributes.LINK_PLAIN_ATTRIBUTES,
+              e -> MigraxInit.run(project));
+    }
+  }
+
+  /** An entry of the right-click menu for the selected migration. */
+  private final class RowAction extends DumbAwareAction {
+    private final boolean needsFile;
+    private final Consumer<MigraxStatus.Row> run;
+
+    RowAction(String text, boolean needsFile, Consumer<MigraxStatus.Row> run) {
+      super(text);
+      this.needsFile = needsFile;
+      this.run = run;
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+      // Reads the table's selection.
+      return ActionUpdateThread.EDT;
+    }
+
+    @Override
+    public void update(@NotNull AnActionEvent e) {
+      MigraxStatus.Row row = selected();
+      e.getPresentation().setEnabled(row != null && (!needsFile || row.hasFile()));
+    }
+
+    @Override
+    public void actionPerformed(@NotNull AnActionEvent e) {
+      MigraxStatus.Row row = selected();
+      if (row != null) {
+        run.accept(row);
+      }
     }
   }
 

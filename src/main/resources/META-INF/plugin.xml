@@ -10,7 +10,8 @@
     a status bar entry, an icon next to entity classes (Java and Kotlin) whose changes are not
     in a migration yet, lint findings marked inside migration files, and a toolbar and a
     Tools > Migrax menu to generate migrations, migrate, roll back, find drift, verify the
-    migrations on a throwaway database and run the doctor. Needs
+    migrations on a throwaway database, run the doctor and set up Migrax in a new project.
+    Needs
     the Migrax command line.
   ]]></description>
 
@@ -50,6 +51,9 @@
     <group id="Migrax.Menu" class="org.migrax.intellij.MigraxActions$Menu" text="Migrax"
            popup="true" icon="/icons/migrax.svg">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <action id="Migrax.Init" class="org.migrax.intellij.MigraxActions$Init"
+              text="Set Up Migrax..." icon="AllIcons.General.Settings"
+              description="Create the Migrax folders and show what Migrax detected"/>
       <action id="Migrax.Generate" class="org.migrax.intellij.MigraxActions$Generate"
               text="Generate Migration" icon="AllIcons.Actions.AddFile"
               description="Write the next migration from the entity changes"/>
@@ -99,6 +103,7 @@
       <action id="Migrax.Refresh" class="org.migrax.intellij.MigraxActions$Refresh"
               text="Refresh" icon="AllIcons.Actions.Refresh"
               description="Load the open tab of the Migrax tool window again"/>
+      <reference ref="Migrax.Init"/>
       <separator/>
       <reference ref="Migrax.New"/>
       <reference ref="Migrax.Generate"/>
