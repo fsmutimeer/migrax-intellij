@@ -64,6 +64,15 @@ public class MigraxWatchedFilesTest {
   }
 
   @Test
+  public void aDeletedMarkerIsNoticedButNotTheFilesTheCheckWrites() {
+    assertTrue(MigraxWatchedFiles.movesAMarker("/work/shop/.migrax"));
+    assertTrue(MigraxWatchedFiles.movesAMarker("/work/shop/migrax.properties"));
+    // The check writes these itself: reacting to them would check again and again.
+    assertFalse(MigraxWatchedFiles.movesAMarker("/work/shop/.migrax/classpath.txt"));
+    assertFalse(MigraxWatchedFiles.movesAMarker("/work/shop/.migrax/build.stamp"));
+  }
+
+  @Test
   public void filesOutsideTheProjectFolderDoNot() {
     assertFalse(MigraxWatchedFiles.matters(ROOT, ROOT.resolveSibling("other/A.java")));
     assertFalse(MigraxWatchedFiles.matters(ROOT, ROOT));

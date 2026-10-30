@@ -2,6 +2,7 @@ package org.migrax.intellij;
 
 import com.google.gson.JsonElement;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
+import com.intellij.ide.ActivityTracker;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
@@ -14,7 +15,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -45,7 +45,6 @@ public final class MigraxHealthService implements Disposable {
   // These are also used off the editor thread (findRoot runs in background tasks).
   private volatile boolean detected;
   private volatile Path root;
-  private final AtomicBoolean detectedOnce = new AtomicBoolean();
 
   public MigraxHealthService(Project project) {
     this.project = project;
@@ -120,7 +119,7 @@ public final class MigraxHealthService implements Disposable {
     return health;
   }
 
-  /** True once a Migrax project was found in this IDE project (see {@link #findRoot}). */
+  /** True while a Migrax project is found in this IDE project (see {@link #findRoot}). */
   boolean isDetected() {
     return detected;
   }
@@ -128,8 +127,8 @@ public final class MigraxHealthService implements Disposable {
   /**
    * Finds the folder to run the command in: the Migrax project folder (also in a sub-module),
    * or the project folder when there is none, so the command can say what is missing. Reads the
-   * disk: call it from a background thread. When a Migrax project shows up for the first time
-   * the status bar widget is switched on.
+   * disk: call it from a background thread. When a Migrax project shows up, or is gone (its
+   * .migrax folder deleted), the status bar widget and the actions follow at once.
    */
   Optional<Path> findRoot() {
     String base = project.getBasePath();
@@ -149,17 +148,33 @@ public final class MigraxHealthService implements Disposable {
         known != null && MigraxProjectDetector.isMigraxProject(known)
             ? Optional.of(known)
             : MigraxProjectDetector.findRoot(folder);
-    root = found.orElse(null);
-    if (found.isPresent() && detectedOnce.compareAndSet(false, true)) {
-      detected = true;
-      ApplicationManager.getApplication().invokeLater(this::showWidget, project.getDisposed());
+    // Commands and the lint marks call this at the same time: one of them reports the change.
+    synchronized (this) {
+      root = found.orElse(null);
+      if (found.isPresent() != detected) {
+        detected = found.isPresent();
+        ApplicationManager.getApplication()
+            .invokeLater(this::detectionChanged, project.getDisposed());
+      }
     }
     return Optional.of(found.orElse(folder));
   }
 
-  private void showWidget() {
+  /** Editor thread. Reads {@link #detected} again: it may have changed back meanwhile. */
+  private void detectionChanged() {
     project.getService(StatusBarWidgetsManager.class)
         .updateWidget(MigraxStatusBarWidgetFactory.class);
+    if (detected) {
+      // Also when the status bar entry is hidden, which would otherwise ask for it.
+      refresh();
+    } else {
+      // Gone: no margin icons, and nothing greyed out by an answer about a project that is gone.
+      showEntityChanges(MigraxEntityChanges.NONE);
+      health = MigraxHealth.unavailable("This project does not use Migrax");
+      listeners.forEach(Runnable::run);
+    }
+    // The actions show or hide by it: update the toolbar and menus now, not at the next click.
+    ActivityTracker.getInstance().inc();
   }
 
   private void onStatus(MigraxResult result) {
@@ -245,6 +260,8 @@ public final class MigraxHealthService implements Disposable {
     running = false;
     health = latest;
     listeners.forEach(Runnable::run);
+    // The actions grey out by the latest health: update the toolbar now, not at the next click.
+    ActivityTracker.getInstance().inc();
     if (againWhenDone) {
       againWhenDone = false;
       refresh();

@@ -138,9 +138,9 @@ final class MigraxStatusPanel extends JPanel {
     MigraxStatus status =
         result.timedOut() ? null : MigraxStatus.from(MigraxResult.parseJsonValue(result.stdout()));
     if (status != null) {
+      // The status bar is brought up to date by whoever asked for this (refreshStatus,
+      // refreshOpenTab): checking it again from here ran a second check, which may build.
       show(status.summary(), status.rows());
-      // The status bar counts the same migrations: bring it up to date too.
-      MigraxHealthService.getInstance(project).refresh();
       return;
     }
     show(result.errorMessage(), List.of());

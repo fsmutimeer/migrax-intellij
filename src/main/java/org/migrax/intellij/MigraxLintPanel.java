@@ -1,9 +1,6 @@
 package org.migrax.intellij;
 
-import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
@@ -78,6 +75,11 @@ final class MigraxLintPanel extends JPanel {
     return ran;
   }
 
+  /** What the tab shows may be out of date: it loads again when it is next opened. */
+  void markStale() {
+    ran = false;
+  }
+
   /** True while the command runs. */
   boolean isLoading() {
     return loading;
@@ -145,26 +147,20 @@ final class MigraxLintPanel extends JPanel {
     }
   }
 
-  /** Opens the migration file of a finding; the file name is relative to the project folder. */
+  /**
+   * Opens the migration file of a finding. The command prints it relative to the Migrax project
+   * folder, which in a repository with several modules is not the IDE project's.
+   */
   private void open(MigraxFinding finding) {
-    String base = project.getBasePath();
-    if (base == null || finding.file().isEmpty()) {
+    Path root = MigraxHealthService.getInstance(project).knownRoot();
+    if (root == null || finding.file().isEmpty()) {
       return;
     }
     try {
-      Path root = Path.of(base).normalize();
       Path path = root.resolve(finding.file()).normalize();
-      if (!path.startsWith(root)) {
-        return;
-      }
-      LocalFileSystem files = LocalFileSystem.getInstance();
-      // A file that was just generated may not be known to the IDE yet: refresh only then.
-      VirtualFile file = files.findFileByNioFile(path);
-      if (file == null) {
-        file = files.refreshAndFindFileByNioFile(path);
-      }
-      if (file != null) {
-        FileEditorManager.getInstance(project).openFile(file, true);
+      if (path.startsWith(root)) {
+        // Finds the file on a background thread: a just generated one is read from disk.
+        MigraxGenerator.open(project, List.of(path));
       }
     } catch (InvalidPathException e) {
       // A file name the system cannot read as a path: nothing to open.

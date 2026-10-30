@@ -9,6 +9,7 @@ import com.intellij.openapi.ui.SimpleToolWindowPanel;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.openapi.wm.ToolWindowManager;
+import com.intellij.openapi.wm.ex.ToolWindowManagerListener;
 import com.intellij.ui.components.JBTabbedPane;
 import com.intellij.ui.content.Content;
 import com.intellij.ui.content.ContentFactory;
@@ -51,21 +52,55 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
 
   /**
    * After something changed: loads the Status tab again and the status behind the status bar
-   * entry, the margin icons and the greyed-out actions. Editor thread.
+   * entry, the margin icons and the greyed-out actions. Of the other tabs, the one on screen
+   * loads again and the rest when they are next shown, so a tab nobody sees runs no command (Plan
+   * may build the project). Editor thread.
    */
   static void refreshStatus(Project project) {
     if (project.isDisposed()) {
       return;
     }
-    JBTabbedPane tabs = tabs(ToolWindowManager.getInstance(project).getToolWindow(ID));
+    ToolWindow window = ToolWindowManager.getInstance(project).getToolWindow(ID);
+    JBTabbedPane tabs = tabs(window);
     if (tabs != null) {
+      Object onScreen = window.isVisible() ? tabs.getSelectedComponent() : null;
       for (int i = 0; i < tabs.getTabCount(); i++) {
-        if (tabs.getComponentAt(i) instanceof MigraxStatusPanel status) {
+        Object tab = tabs.getComponentAt(i);
+        if (tab instanceof MigraxStatusPanel status) {
           status.refresh();
+        } else if (tab != onScreen || !reloadIfLoaded(tab)) {
+          // A tab still loading may finish with the old answer: it loads again when next shown.
+          markStale(tab);
         }
       }
     }
     MigraxHealthService.getInstance(project).refreshAfterChange();
+  }
+
+  /** Loads a tab again if it was loaded before and is not loading now; false if not. */
+  private static boolean reloadIfLoaded(Object tab) {
+    if (tab instanceof MigraxPlanPanel plan && plan.hasRun() && !plan.isLoading()) {
+      plan.refresh();
+    } else if (tab instanceof MigraxLintPanel lint && lint.hasRun() && !lint.isLoading()) {
+      lint.refresh();
+    } else if (tab instanceof MigraxEnvironmentsPanel environments
+        && environments.hasRun()
+        && !environments.isLoading()) {
+      environments.refresh();
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  private static void markStale(Object tab) {
+    if (tab instanceof MigraxPlanPanel plan) {
+      plan.markStale();
+    } else if (tab instanceof MigraxLintPanel lint) {
+      lint.markStale();
+    } else if (tab instanceof MigraxEnvironmentsPanel environments) {
+      environments.markStale();
+    }
   }
 
   /**
@@ -93,6 +128,17 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
       }
     }
     MigraxHealthService.getInstance(project).refreshAfterChange();
+  }
+
+  /** Loads the tab if it never loaded or is out of date (see {@link #refreshStatus}). */
+  private static void loadIfNeeded(Object tab) {
+    if (tab instanceof MigraxPlanPanel plan && !plan.hasRun()) {
+      plan.refresh();
+    } else if (tab instanceof MigraxLintPanel lint && !lint.hasRun()) {
+      lint.refresh();
+    } else if (tab instanceof MigraxEnvironmentsPanel environments && !environments.hasRun()) {
+      environments.refresh();
+    }
   }
 
   private static @Nullable JBTabbedPane tabs(@Nullable ToolWindow window) {
@@ -130,17 +176,24 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
     Content content = ContentFactory.getInstance().createContent(panel, "", false);
     toolWindow.getContentManager().addContent(content);
     status.refresh();
-    // Each of these tabs runs the command: load it when it is first opened.
-    tabs.addChangeListener(
-        e -> {
-          Object selected = tabs.getSelectedComponent();
-          if (selected == plan && !plan.hasRun()) {
-            plan.refresh();
-          } else if (selected == lint && !lint.hasRun()) {
-            lint.refresh();
-          } else if (selected == environments && !environments.hasRun()) {
-            environments.refresh();
-          }
-        });
+    // Also for the greyed-out actions, in case the status bar entry is hidden; a check that
+    // already runs is not started twice.
+    MigraxHealthService.getInstance(project).refresh();
+    // Each of these tabs runs the command: load it when it is first shown, or shown again after
+    // a change made it out of date.
+    tabs.addChangeListener(e -> loadIfNeeded(tabs.getSelectedComponent()));
+    project
+        .getMessageBus()
+        .connect(toolWindow.getDisposable())
+        .subscribe(
+            ToolWindowManagerListener.TOPIC,
+            new ToolWindowManagerListener() {
+              @Override
+              public void toolWindowShown(@NotNull ToolWindow shown) {
+                if (shown == toolWindow) {
+                  loadIfNeeded(tabs.getSelectedComponent());
+                }
+              }
+            });
   }
 }

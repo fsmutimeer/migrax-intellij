@@ -41,6 +41,14 @@ final class MigraxWatchedFiles {
         || path.endsWith("/.migrax");
   }
 
+  /**
+   * Whether the folder's Migrax markers themselves were added or removed (a deleted .migrax
+   * folder). Not the files inside .migrax: the check writes those, which would check again.
+   */
+  static boolean movesAMarker(String path) {
+    return path.endsWith("/migrax.properties") || path.endsWith("/.migrax");
+  }
+
   /** Whether a change of this file (both absolute and normalized) needs a new check. */
   static boolean matters(Path root, Path file) {
     if (!file.startsWith(root) || file.equals(root)) {

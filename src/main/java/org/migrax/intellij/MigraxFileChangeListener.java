@@ -13,7 +13,8 @@ import org.jetbrains.annotations.NotNull;
  * Checks again after an entity, a migration or a settings file changed: saved in the editor,
  * or changed on disk (a generated migration, a pull). The check waits until the changes stop.
  * Before a Migrax project was found, only a new {@code migrax.properties} or {@code .migrax}
- * folder counts: the check then finds the project.
+ * folder counts: the check then finds the project. After, a deleted one counts too: the check
+ * then finds it gone.
  */
 public final class MigraxFileChangeListener implements BulkFileListener {
 
@@ -35,7 +36,7 @@ public final class MigraxFileChangeListener implements BulkFileListener {
         boolean matters =
             root == null
                 ? MigraxWatchedFiles.marksAProject(path)
-                : MigraxWatchedFiles.matters(root, path);
+                : MigraxWatchedFiles.matters(root, path) || MigraxWatchedFiles.movesAMarker(path);
         if (matters) {
           health.refreshSoon();
           return;

@@ -67,6 +67,11 @@ final class MigraxEnvironmentsPanel extends JPanel {
     return ran;
   }
 
+  /** What the tab shows may be out of date: it loads again when it is next opened. */
+  void markStale() {
+    ran = false;
+  }
+
   /** True while the command runs. */
   boolean isLoading() {
     return loading;
