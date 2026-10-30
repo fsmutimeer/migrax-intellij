@@ -35,7 +35,7 @@ public class PluginDescriptorTest {
     try (InputStream in = getClass().getResourceAsStream("/META-INF/plugin.xml")) {
       Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(in);
       NodeList actions = doc.getElementsByTagName("action");
-      assertEquals(8, actions.getLength());
+      assertEquals(11, actions.getLength());
       Set<String> ids = new HashSet<>();
       for (int i = 0; i < actions.getLength(); i++) {
         Element element = (Element) actions.item(i);
@@ -52,7 +52,7 @@ public class PluginDescriptorTest {
       }
       assertTrue(toolbar);
       NodeList references = doc.getElementsByTagName("reference");
-      assertEquals(7, references.getLength());
+      assertEquals(10, references.getLength());
       for (int i = 0; i < references.getLength(); i++) {
         String ref = ((Element) references.item(i)).getAttribute("ref");
         assertTrue(ref, ids.contains(ref));

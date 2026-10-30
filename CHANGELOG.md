@@ -51,3 +51,7 @@ All notable changes to this plugin are listed here. The format follows
   editor.
 - Repair: removes migrations whose file was deleted from the history, and records a failed
   migration as applied or clears it to run again, after a dialog that shows the database.
+- Generate keeps a backup of dropped tables and columns by default (a checkbox in the drop
+  dialog), so Roll Back can restore the data.
+- Generate for Zero Downtime and Generate Contract, and Backups to list or drop the backup
+  tables, in a More menu of the tool window and in Tools > Migrax.

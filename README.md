@@ -27,7 +27,12 @@ do not have to leave the editor.
   applied, no entity changes) is greyed out and its tooltip says why:
   - *Generate Migration* writes the next migration and opens it with its rollback script.
     When a change looks like a rename it asks "Did you rename ...?", so the data is kept, and
-    it asks before a migration that drops tables or columns.
+    it asks before a migration that drops tables or columns. By default it keeps a backup of
+    the dropped data in `migrax_backup_*` tables, which Roll Back restores.
+  - *Generate for Zero Downtime* (under More in the tool window) splits a change so the old
+    and new version of the application can run at the same time: an expand migration now,
+    and a contract migration with the drops that waits for the next release. *Generate
+    Contract* adds it once every running instance has the expand migration.
   - *New Migration...* creates an empty migration and its rollback script for hand-written
     SQL, such as a data change, and opens both.
   - *Show Plan* opens the Plan tab.
@@ -38,6 +43,8 @@ do not have to leave the editor.
   - *Repair...* fixes the history: a migration whose file was deleted is removed from it (the
     database keeps its changes), and for a failed one you say whether it took effect or you
     restored the database. It shows the database and asks first, like Migrate.
+  - *Backups...* (under More) lists the backup tables of dropped data and drops them, all or
+    one migration's, once you will not roll those migrations back.
   - *Doctor* checks the settings, the project and the database.
   - *Refresh* (tool window only) loads the open tab again.
 

@@ -55,16 +55,17 @@ public final class MigraxActions {
         presentation.setEnabledAndVisible(false);
         return;
       }
-      String reason = nothingToDo(MigraxHealthService.getInstance(e.getProject()).health());
+      Project project = e.getProject();
+      String reason = nothingToDo(project, MigraxHealthService.getInstance(project).health());
       presentation.setVisible(true);
       presentation.setEnabled(reason == null);
       presentation.setDescription(
           reason == null ? getTemplatePresentation().getDescription() : reason);
     }
 
-    /** Why the action has nothing to do now, or null. */
+    /** Why the action has nothing to do now, or null. Background thread. */
     @Nullable
-    String nothingToDo(MigraxHealth health) {
+    String nothingToDo(Project project, MigraxHealth health) {
       return null;
     }
 
@@ -88,13 +89,36 @@ public final class MigraxActions {
 
   public static final class Generate extends Base {
     @Override
-    String nothingToDo(MigraxHealth health) {
+    String nothingToDo(Project project, MigraxHealth health) {
       return health.nothingToGenerate();
     }
 
     @Override
     void perform(Project project) {
-      MigraxGenerator.generate(project);
+      MigraxGenerator.generate(project, MigraxGenerator.Mode.NORMAL);
+    }
+  }
+
+  public static final class GenerateZeroDowntime extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxGenerator.generate(project, MigraxGenerator.Mode.ZERO_DOWNTIME);
+    }
+  }
+
+  public static final class GenerateContract extends Base {
+    @Override
+    String nothingToDo(Project project, MigraxHealth health) {
+      // A look into one folder, on the background thread actions update on.
+      return MigraxGenerator.hasWaitingContract(
+              MigraxHealthService.getInstance(project).knownRoot())
+          ? null
+          : "No contract migration is waiting";
+    }
+
+    @Override
+    void perform(Project project) {
+      MigraxGenerator.generate(project, MigraxGenerator.Mode.CONTRACT);
     }
   }
 
@@ -114,7 +138,7 @@ public final class MigraxActions {
 
   public static final class Migrate extends Base {
     @Override
-    String nothingToDo(MigraxHealth health) {
+    String nothingToDo(Project project, MigraxHealth health) {
       return health.nothingToMigrate();
     }
 
@@ -126,7 +150,7 @@ public final class MigraxActions {
 
   public static final class Rollback extends Base {
     @Override
-    String nothingToDo(MigraxHealth health) {
+    String nothingToDo(Project project, MigraxHealth health) {
       return health.nothingToRollBack();
     }
 
@@ -138,13 +162,20 @@ public final class MigraxActions {
 
   public static final class Repair extends Base {
     @Override
-    String nothingToDo(MigraxHealth health) {
+    String nothingToDo(Project project, MigraxHealth health) {
       return health.nothingToRepair();
     }
 
     @Override
     void perform(Project project) {
       MigraxRepair.repair(project);
+    }
+  }
+
+  public static final class Backups extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxBackups.show(project);
     }
   }
 

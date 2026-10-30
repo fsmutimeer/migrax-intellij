@@ -117,8 +117,66 @@ public class MigraxGenerateOutputTest {
             "--rename",
             "t.a=b,t.c=d",
             "--allow-destructive"),
-        MigraxGenerateOutput.args(renames, true));
-    assertEquals(List.of("generate", "--no-input"), MigraxGenerateOutput.args(List.of(), false));
+        MigraxGenerateOutput.args(MigraxGenerator.Mode.NORMAL, renames, true, false));
+    assertEquals(
+        List.of("generate", "--no-input"),
+        MigraxGenerateOutput.args(MigraxGenerator.Mode.NORMAL, List.of(), false, true));
+  }
+
+  @Test
+  public void argsKeepTheDroppedDataOnlyWhereTheCommandCan() {
+    assertEquals(
+        List.of("generate", "--no-input", "--allow-destructive", "--keep-data"),
+        MigraxGenerateOutput.args(MigraxGenerator.Mode.NORMAL, List.of(), true, true));
+    // The command refuses --zero-downtime with --keep-data.
+    List<MigraxGenerateOutput.Rename> renames =
+        List.of(new MigraxGenerateOutput.Rename("a", "--rename", "categories.summary=note"));
+    assertEquals(
+        List.of(
+            "generate",
+            "--no-input",
+            "--zero-downtime",
+            "--rename",
+            "categories.summary=note",
+            "--allow-destructive"),
+        MigraxGenerateOutput.args(MigraxGenerator.Mode.ZERO_DOWNTIME, renames, true, true));
+    assertEquals(
+        List.of("generate", "--no-input", "--contract"),
+        MigraxGenerateOutput.args(MigraxGenerator.Mode.CONTRACT, renames, true, true));
+  }
+
+  @Test
+  public void readsTheZeroDowntimeSplit() {
+    // Real output of generate --zero-downtime with a renamed column.
+    MigraxGenerateOutput output =
+        output(
+            0,
+            "Created src/main/resources/db/migration/0003_rename_categories_summary_expand.sql"
+                + " (expand: safe while the old version runs):\n"
+                + "  - add column categories.note\n"
+                + "Waiting in .migrax/pending/0003_rename_categories_summary_contract.sql"
+                + " (contract: for the next release):\n"
+                + "  - drop column categories.summary\n",
+            "");
+    assertEquals(
+        List.of("src/main/resources/db/migration/0003_rename_categories_summary_expand.sql"),
+        output.created());
+    assertEquals(
+        List.of(".migrax/pending/0003_rename_categories_summary_contract.sql"),
+        output.waiting());
+    assertTrue(output(0, "No contract migrations are waiting.\n", "").noChanges());
+  }
+
+  @Test
+  public void readsWhatCouldNotBeKept() {
+    MigraxGenerateOutput output =
+        output(
+            0,
+            "Created db/migration/0003_x.sql:\n",
+            "warning: --keep-data can't keep audit.note: the table has no key and no other"
+                + " column to match its rows by.\n");
+    assertEquals(List.of("audit.note"), output.notKept());
+    assertTrue(output(0, "Created db/migration/0003_x.sql:\n", "").notKept().isEmpty());
   }
 
   @Test

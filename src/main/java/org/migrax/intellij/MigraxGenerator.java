@@ -6,6 +6,9 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,6 +16,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -22,30 +26,63 @@ import org.jetbrains.annotations.Nullable;
  */
 final class MigraxGenerator {
 
+  /** A plain migration, the expand half of a zero-downtime change, or its waiting contract. */
+  enum Mode {
+    NORMAL("Migrax: Generate"),
+    ZERO_DOWNTIME("Migrax: Generate for Zero Downtime"),
+    CONTRACT("Migrax: Generate Contract");
+
+    private final String title;
+
+    Mode(String title) {
+      this.title = title;
+    }
+  }
+
   // Generate may build the project first.
   private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
-  private static final String TITLE = "Migrax: Generate";
+  /**
+   * Where generate --zero-downtime keeps the contract migrations until --contract. For a further
+   * database it is .migrax/<database>/pending, but the plugin works on the default one only.
+   */
+  static final String PENDING_FOLDER = ".migrax/pending";
 
   private final Project project;
+  private final Mode mode;
   private final List<MigraxGenerateOutput.Rename> renamed = new ArrayList<>();
   // The renames answered with No, by their option value, so they are not asked again.
   private final Set<String> notRenamed = new HashSet<>();
   private boolean allowDrops;
+  private boolean keepData;
 
-  private MigraxGenerator(Project project) {
+  private MigraxGenerator(Project project, Mode mode) {
     this.project = project;
+    this.mode = mode;
   }
 
   /** Generates the next migration. Editor thread. */
-  static void generate(Project project) {
-    new MigraxGenerator(project).attempt();
+  static void generate(Project project, Mode mode) {
+    new MigraxGenerator(project, mode).attempt();
+  }
+
+  /** True when generate --zero-downtime left contract migrations to add. Reads the disk. */
+  static boolean hasWaitingContract(@Nullable Path root) {
+    Path folder = root == null ? null : root.resolve(PENDING_FOLDER);
+    if (folder == null || !Files.isDirectory(folder)) {
+      return false;
+    }
+    try (Stream<Path> files = Files.list(folder)) {
+      return files.anyMatch(file -> file.getFileName().toString().endsWith(".sql"));
+    } catch (IOException | UncheckedIOException e) {
+      return false;
+    }
   }
 
   private void attempt() {
     MigraxCommands.runEach(
         project,
-        TITLE,
-        List.of(MigraxGenerateOutput.args(renamed, allowDrops)),
+        mode.title,
+        List.of(MigraxGenerateOutput.args(mode, renamed, allowDrops, keepData)),
         TIMEOUT_MILLIS,
         true,
         results -> handle(results.get(0)),
@@ -58,7 +95,7 @@ final class MigraxGenerator {
     }
     MigraxGenerateOutput output = MigraxGenerateOutput.of(result);
     if (!output.created().isEmpty()) {
-      created(output.created());
+      created(output);
       return;
     }
     if (askAboutRenames(output.renames())) {
@@ -67,8 +104,11 @@ final class MigraxGenerator {
       return;
     }
     if (output.needsDrops()) {
-      if (confirmDrops(output.drops())) {
+      MigraxDropDialog dialog =
+          new MigraxDropDialog(project, mode.title, output.drops(), mode == Mode.NORMAL);
+      if (dialog.showAndGet()) {
         allowDrops = true;
+        keepData = dialog.keepData();
         attempt();
       }
       return;
@@ -76,7 +116,11 @@ final class MigraxGenerator {
     if (!result.succeeded()) {
       MigraxNotifications.error(project, result.errorMessage());
     } else if (output.noChanges()) {
-      MigraxNotifications.info(project, "No changes: the entities match the last migration.");
+      MigraxNotifications.info(
+          project,
+          mode == Mode.CONTRACT
+              ? "No contract migration is waiting."
+              : "No changes: the entities match the last migration.");
     } else {
       MigraxNotifications.info(project, "Generate finished. See the Status tab.");
       MigraxToolWindowFactory.refreshStatus(project);
@@ -100,7 +144,7 @@ final class MigraxGenerator {
               rename.question()
                   + "\n\nRenamed keeps the data. Not renamed drops the old one with its data"
                   + " and adds a new, empty one.",
-              TITLE,
+              mode.title,
               "Renamed",
               "Not Renamed",
               Messages.getQuestionIcon());
@@ -117,22 +161,21 @@ final class MigraxGenerator {
     return any;
   }
 
-  private boolean confirmDrops(List<String> drops) {
-    StringBuilder message = new StringBuilder("These changes delete data:\n");
-    drops.forEach(drop -> message.append("\n  ").append(drop));
-    message.append("\n\nGenerate the migration with them? Review its SQL before you migrate.");
-    return Messages.showOkCancelDialog(
-            project,
-            message.toString(),
-            TITLE,
-            "Generate with Drops",
-            "Cancel",
-            Messages.getWarningIcon())
-        == Messages.OK;
-  }
-
-  private void created(List<String> files) {
-    MigraxNotifications.info(project, "Created " + String.join(", ", files) + ".");
+  private void created(MigraxGenerateOutput output) {
+    List<String> files = output.created();
+    String message = "Created " + String.join(", ", files) + ".";
+    if (!output.notKept().isEmpty()) {
+      message +=
+          "\nNo backup of "
+              + String.join(", ", output.notKept())
+              + ": the table has no key to match its rows by, so Roll Back cannot restore it.";
+    }
+    if (!output.waiting().isEmpty()) {
+      message +=
+          "\nThe contract migration waits for the next release. When every running instance"
+              + " has this one, use Generate Contract.";
+    }
+    MigraxNotifications.info(project, message);
     MigraxToolWindowFactory.refreshStatus(project);
     Path root = MigraxHealthService.getInstance(project).knownRoot();
     List<Path> paths = new ArrayList<>();

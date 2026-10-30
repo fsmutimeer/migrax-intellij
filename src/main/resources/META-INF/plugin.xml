@@ -52,6 +52,14 @@
       <action id="Migrax.Generate" class="org.migrax.intellij.MigraxActions$Generate"
               text="Generate Migration" icon="AllIcons.Actions.AddFile"
               description="Write the next migration from the entity changes"/>
+      <action id="Migrax.GenerateZeroDowntime"
+              class="org.migrax.intellij.MigraxActions$GenerateZeroDowntime"
+              text="Generate for Zero Downtime"
+              description="Expand now, contract later: old and new version run side by side"/>
+      <action id="Migrax.GenerateContract"
+              class="org.migrax.intellij.MigraxActions$GenerateContract"
+              text="Generate Contract"
+              description="Add the waiting contract migration of a zero-downtime change"/>
       <action id="Migrax.New" class="org.migrax.intellij.MigraxActions$NewMigration"
               text="New Migration..." icon="AllIcons.General.Add"
               description="Create an empty migration for hand-written SQL, such as a data change"/>
@@ -68,6 +76,9 @@
       <action id="Migrax.Repair" class="org.migrax.intellij.MigraxActions$Repair"
               text="Repair..." icon="AllIcons.Toolwindows.ToolWindowBuild"
               description="Fix the history of failed or missing migrations"/>
+      <action id="Migrax.Backups" class="org.migrax.intellij.MigraxActions$Backups"
+              text="Backups..."
+              description="List or drop the backup tables of dropped data"/>
       <separator/>
       <action id="Migrax.Doctor" class="org.migrax.intellij.MigraxActions$Doctor"
               text="Doctor" icon="AllIcons.General.InspectionsOK"
@@ -88,6 +99,12 @@
       <reference ref="Migrax.Repair"/>
       <separator/>
       <reference ref="Migrax.Doctor"/>
+      <group id="Migrax.More" text="More" popup="true" icon="AllIcons.Actions.More">
+        <reference ref="Migrax.GenerateZeroDowntime"/>
+        <reference ref="Migrax.GenerateContract"/>
+        <separator/>
+        <reference ref="Migrax.Backups"/>
+      </group>
     </group>
   </actions>
 
