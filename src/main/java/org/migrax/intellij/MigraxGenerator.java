@@ -186,6 +186,14 @@ final class MigraxGenerator {
         paths.add(rollbackOf(migration));
       }
     }
+    // The command wrote behind the IDE's back: the new snapshot, a waiting contract and the
+    // migration folders. The Project view shows them now, not at the IDE's next look at the disk.
+    List<Path> changed = new ArrayList<>();
+    if (root != null) {
+      changed.add(root.resolve(".migrax"));
+    }
+    paths.stream().map(Path::getParent).distinct().forEach(changed::add);
+    LocalFileSystem.getInstance().refreshNioFiles(changed, true, true, null);
     open(project, paths);
   }
 

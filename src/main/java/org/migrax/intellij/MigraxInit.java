@@ -6,6 +6,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -53,8 +54,19 @@ final class MigraxInit {
         TITLE,
         List.of("init", "--dir", folder.getPath()),
         TIMEOUT_MILLIS,
-        result -> show(project, result, picked),
+        result -> done(project, result, folder, picked),
         message -> MigraxNotifications.error(project, message));
+  }
+
+  private static void done(
+      Project project, MigraxResult result, VirtualFile folder, Path picked) {
+    if (project.isDisposed()) {
+      return;
+    }
+    // The command made .migrax and the migration folder behind the IDE's back (also when it
+    // failed halfway): the Project view shows them now, not at the IDE's next look at the disk.
+    VfsUtil.markDirtyAndRefresh(true, true, true, folder);
+    show(project, result, picked);
   }
 
   private static void show(Project project, MigraxResult result, Path picked) {
