@@ -20,6 +20,15 @@ final class MigraxResult {
   static final int EXIT_ERROR = 1;
   static final int EXIT_CHANGES = 2;
 
+  // Mirrors the CLI's Project.packageName(); when its wording changes, its own text shows.
+  static final String NO_PACKAGE = "Entity package is unknown.";
+  static final String NO_PACKAGE_IN_IDE =
+      "Migrax does not know which package holds the entity classes, so it cannot compare them"
+          + " with the migrations. Add migrax.package=<package> to"
+          + " src/main/resources/application.properties (application.yml works too), or open"
+          + " the folder with a pom.xml that has a groupId or a build.gradle with group = \"...\"."
+          + " Migrate, Roll Back and Doctor work without it.";
+
   private final int exitCode;
   private final String stdout;
   private final String stderr;
@@ -79,6 +88,16 @@ final class MigraxResult {
   /** A message for the user when the run failed, or null when it did not. */
   @Nullable
   String errorMessage() {
+    String message = commandErrorMessage();
+    // The hint names command options; in the IDE the settings file is the way. A further
+    // database's hint names its own setting and stays.
+    return message != null && message.contains(NO_PACKAGE) && message.contains("MIGRAX_PACKAGE")
+        ? NO_PACKAGE_IN_IDE
+        : message;
+  }
+
+  @Nullable
+  private String commandErrorMessage() {
     if (cancelled) {
       return "Cancelled.";
     }

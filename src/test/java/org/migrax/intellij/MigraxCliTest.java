@@ -77,6 +77,27 @@ public class MigraxCliTest {
   }
 
   @Test
+  public void anUnknownEntityPackageIsExplainedForTheIde() {
+    String hint =
+        "Pass --package <name> or set MIGRAX_PACKAGE (for Maven projects the groupId is used).";
+    String json =
+        "{\"ok\":false,\"exitCode\":1,\"error\":{\"code\":\"MXE001\","
+            + "\"message\":\"Entity package is unknown.\",\"hint\":\"" + hint + "\"}}";
+    assertEquals(
+        MigraxResult.NO_PACKAGE_IN_IDE, new MigraxResult(1, json, "", false, false).errorMessage());
+    // generate has no JSON: the same error on stderr.
+    String stderr = "error[MXE001]: Entity package is unknown. " + hint + "\n";
+    assertEquals(
+        MigraxResult.NO_PACKAGE_IN_IDE,
+        new MigraxResult(1, "", stderr, false, false).errorMessage());
+    // A further database names its own setting, which already works in the IDE.
+    String further =
+        "error[MXE001]: Entity package is unknown. Set migrax.databases.audit.package or pass"
+            + " --package <name>.";
+    assertEquals(further, new MigraxResult(1, "", further, false, false).errorMessage());
+  }
+
+  @Test
   public void aFailureWithoutJsonShowsTheErrorOutput() throws IOException {
     Path migrax = launcher(WINDOWS ? "echo boom 1>&2" : "echo boom >&2", "exit 1");
     MigraxResult result = new MigraxCli(migrax, workDir).run(List.of("status"), null);
