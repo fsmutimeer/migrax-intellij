@@ -9,7 +9,8 @@
     the migrations, the SQL of the next migration, lint findings and the configured databases,
     a status bar entry, an icon next to entity classes (Java and Kotlin) whose changes are not
     in a migration yet, lint findings marked inside migration files, and a toolbar and a
-    Tools > Migrax menu to generate migrations, migrate, roll back and run the doctor. Needs
+    Tools > Migrax menu to generate migrations, migrate, roll back, find drift, verify the
+    migrations on a throwaway database and run the doctor. Needs
     the Migrax command line.
   ]]></description>
 
@@ -80,6 +81,15 @@
               text="Backups..."
               description="List or drop the backup tables of dropped data"/>
       <separator/>
+      <action id="Migrax.Drift" class="org.migrax.intellij.MigraxActions$Drift"
+              text="Drift" icon="AllIcons.Actions.Diff"
+              description="Find changes made to the database outside the migrations"/>
+      <action id="Migrax.Verify" class="org.migrax.intellij.MigraxActions$Verify"
+              text="Verify"
+              description="Apply every migration to a throwaway database and check the result"/>
+      <action id="Migrax.Report" class="org.migrax.intellij.MigraxActions$Report"
+              text="Report"
+              description="Open an HTML report of the schema, migrations, lint and drift"/>
       <action id="Migrax.Doctor" class="org.migrax.intellij.MigraxActions$Doctor"
               text="Doctor" icon="AllIcons.General.InspectionsOK"
               description="Check the Migrax settings, the project and the database"/>
@@ -98,13 +108,22 @@
       <reference ref="Migrax.Rollback"/>
       <reference ref="Migrax.Repair"/>
       <separator/>
+      <reference ref="Migrax.Drift"/>
       <reference ref="Migrax.Doctor"/>
       <group id="Migrax.More" text="More" popup="true" icon="AllIcons.Actions.More">
         <reference ref="Migrax.GenerateZeroDowntime"/>
         <reference ref="Migrax.GenerateContract"/>
         <separator/>
+        <reference ref="Migrax.Verify"/>
+        <reference ref="Migrax.Report"/>
+        <separator/>
         <reference ref="Migrax.Backups"/>
       </group>
+    </group>
+    <!-- The popup of the margin icon next to an entity class with changes. -->
+    <group id="Migrax.EntityGutter">
+      <reference ref="Migrax.Generate"/>
+      <reference ref="Migrax.Plan"/>
     </group>
   </actions>
 

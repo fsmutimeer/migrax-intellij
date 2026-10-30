@@ -132,6 +132,19 @@ final class MigraxResult {
         : text.trim();
   }
 
+  /** The error message, or one for an answer the caller could not read, which has none. */
+  String errorOrUnreadable() {
+    String error = errorMessage();
+    return error != null ? error : "The Migrax command gave an answer the plugin cannot read.";
+  }
+
+  /** The string field {@code key} of the object; null when it is missing or not a string. */
+  static @Nullable String string(JsonObject object, String key) {
+    return object.get(key) instanceof JsonPrimitive value && value.isString()
+        ? value.getAsString()
+        : null;
+  }
+
   /** The strings in the list {@code key} of the JSON, such as "created"; null without it. */
   static @Nullable List<String> strings(@Nullable JsonObject json, String key) {
     if (json == null || !(json.get(key) instanceof JsonArray list)) {

@@ -35,7 +35,7 @@ public class PluginDescriptorTest {
     try (InputStream in = getClass().getResourceAsStream("/META-INF/plugin.xml")) {
       Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(in);
       NodeList actions = doc.getElementsByTagName("action");
-      assertEquals(11, actions.getLength());
+      assertEquals(14, actions.getLength());
       Set<String> ids = new HashSet<>();
       for (int i = 0; i < actions.getLength(); i++) {
         Element element = (Element) actions.item(i);
@@ -46,13 +46,24 @@ public class PluginDescriptorTest {
       // The tool window builds its toolbar from this group; the toolbar shows the menu's
       // actions by reference.
       NodeList groups = doc.getElementsByTagName("group");
-      boolean toolbar = false;
+      Set<String> groupIds = new HashSet<>();
       for (int i = 0; i < groups.getLength(); i++) {
-        toolbar |= "Migrax.ToolWindowToolbar".equals(((Element) groups.item(i)).getAttribute("id"));
+        groupIds.add(((Element) groups.item(i)).getAttribute("id"));
       }
-      assertTrue(toolbar);
+      assertTrue(groupIds.contains("Migrax.ToolWindowToolbar"));
+      assertTrue(groupIds.contains(MigraxEntityLineMarkerProvider.ACTIONS));
+      // The margin icon's popup: an empty group would open nothing.
+      for (int i = 0; i < groups.getLength(); i++) {
+        Element group = (Element) groups.item(i);
+        if (MigraxEntityLineMarkerProvider.ACTIONS.equals(group.getAttribute("id"))) {
+          NodeList refs = group.getElementsByTagName("reference");
+          assertEquals(2, refs.getLength());
+          assertEquals("Migrax.Generate", ((Element) refs.item(0)).getAttribute("ref"));
+          assertEquals("Migrax.Plan", ((Element) refs.item(1)).getAttribute("ref"));
+        }
+      }
       NodeList references = doc.getElementsByTagName("reference");
-      assertEquals(10, references.getLength());
+      assertEquals(15, references.getLength());
       for (int i = 0; i < references.getLength(); i++) {
         String ref = ((Element) references.item(i)).getAttribute("ref");
         assertTrue(ref, ids.contains(ref));

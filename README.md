@@ -14,8 +14,9 @@ do not have to leave the editor.
 - A status bar entry ("Migrax: 2 pending", "Migrax: in sync"), shown only in projects that use
   Migrax.
 - An icon in the editor's margin next to a Java or Kotlin entity class with changes that are
-  not in a migration yet. Its tooltip lists the changes; click it to see their SQL in the Plan
-  tab. You can turn it off in Settings > Editor > General > Gutter Icons. It needs a Migrax
+  not in a migration yet. Its tooltip lists the changes; click it to generate the migration
+  (for all entity changes, not only this class) or to see the SQL in the Plan tab.
+  You can turn it off in Settings > Editor > General > Gutter Icons. It needs a Migrax
   command that names the entity class in `check --json` (the next Migrax release), and
   entities read with Hibernate 5 or newer or by annotation scanning.
 - Lint findings inside migration files: a risky statement is underlined (red for errors) and
@@ -45,13 +46,19 @@ do not have to leave the editor.
     restored the database. It shows the database and asks first, like Migrate.
   - *Backups...* (under More) lists the backup tables of dropped data and drops them, all or
     one migration's, once you will not roll those migrations back.
+  - *Drift* compares the database with what the migrations build and lists changes someone
+    made by hand, such as a column added outside a migration. It only reads the database.
+  - *Verify* (under More) applies every migration to a throwaway database (in memory, or in
+    Docker for most databases), checks the result against the entities and tests each rollback
+    script. The database in the settings is not touched.
+  - *Report* (under More) writes an HTML page with the schema, the migrations, the lint
+    findings and the drift, and opens it in the browser.
   - *Doctor* checks the settings, the project and the database.
   - *Refresh* (tool window only) loads the open tab again.
 
 ## Planned
 
-- A quick action on the margin icon to generate the migration.
-- Squash and drift in the menu, and a run configuration for Migrate.
+- Squash in the menu, and a run configuration for Migrate.
 
 ## Known limitations
 

@@ -55,3 +55,8 @@ All notable changes to this plugin are listed here. The format follows
   dialog), so Roll Back can restore the data.
 - Generate for Zero Downtime and Generate Contract, and Backups to list or drop the backup
   tables, in a More menu of the tool window and in Tools > Migrax.
+- Drift, in the toolbar and the menu: lists changes made to the database outside the
+  migrations.
+- Verify and Report under More: apply every migration to a throwaway database and check it, or
+  open an HTML report of the schema, migrations, lint findings and drift.
+- A click on the margin icon next to an entity offers Generate Migration and Show Plan.

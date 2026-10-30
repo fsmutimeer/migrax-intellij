@@ -179,6 +179,27 @@ public final class MigraxActions {
     }
   }
 
+  public static final class Drift extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxDrift.run(project);
+    }
+  }
+
+  public static final class Verify extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxVerify.run(project);
+    }
+  }
+
+  public static final class Report extends Base {
+    @Override
+    void perform(Project project) {
+      MigraxReport.run(project);
+    }
+  }
+
   public static final class Doctor extends Base {
     @Override
     void perform(Project project) {
