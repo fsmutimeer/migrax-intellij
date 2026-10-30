@@ -4,16 +4,33 @@
   <vendor url="https://migrax.org">Migrax</vendor>
 
   <description><![CDATA[
-    Companion for <a href="https://migrax.org">Migrax</a>, which generates SQL migrations from
-    your JPA/Hibernate entities. Adds a Migrax tool window to IntelliJ IDEA with the state of
-    the migrations, the SQL of the next migration, lint findings and the configured databases,
-    a status bar entry, an icon next to entity classes (Java and Kotlin) whose changes are not
-    in a migration yet, lint findings marked inside migration files, and a toolbar and a
-    Tools > Migrax menu to generate migrations, migrate, roll back, find drift, verify the
-    migrations on a throwaway database, run the doctor and set up Migrax in a new project.
-    Needs
-    the Migrax command line.
+    <p>Generate, review, apply and roll back SQL database migrations from your JPA/Hibernate
+    entities without leaving the editor, with <a href="https://migrax.org">Migrax</a>. Free, for
+    IntelliJ IDEA Community and Ultimate.</p>
+    <ul>
+      <li><b>Generate Migration</b> writes the next migration from your entity changes, with a
+      rollback script. It asks "Did you rename ...?" for a change that looks like a rename, and
+      asks before dropping data, keeping a backup by default.</li>
+      <li><b>Migrate</b>, <b>Roll Back</b> and <b>Repair</b> show which database first and ask,
+      with a red warning for one that is not on your computer.</li>
+      <li>A <b>Migrax tool window</b> with the state of every migration, the SQL of the next
+      one, lint findings and every configured database.</li>
+      <li>An <b>icon next to entity classes</b> (Java and Kotlin) whose changes are not in a
+      migration yet, and <b>locking and risky SQL underlined</b> in migration files.</li>
+      <li><b>Drift</b>, <b>Verify</b> on a throwaway database, an HTML <b>Report</b>,
+      zero-downtime changes, <b>Doctor</b> and <b>Set Up Migrax</b> for a new project.</li>
+    </ul>
+    <p>The plugin runs the Migrax command line (0.17 or newer, needs Java 17), so the IDE gives
+    the same result as your terminal and CI. Without an installed one it offers to download the
+    Migrax release from GitHub, checked against its SHA-256.</p>
+    <p><a href="https://migrax.org/intellij/">Documentation</a> ·
+    <a href="https://github.com/fsmutimeer/migrax-intellij">Source code</a> ·
+    <a href="https://github.com/fsmutimeer/migrax-intellij/issues">Issues</a></p>
   ]]></description>
+
+  <change-notes><![CDATA[
+    <p>First release.</p>
+  ]]></change-notes>
 
   <depends>com.intellij.modules.platform</depends>
   <depends>com.intellij.modules.java</depends>
