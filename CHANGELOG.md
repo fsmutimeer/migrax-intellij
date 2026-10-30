@@ -34,3 +34,7 @@ All notable changes to this plugin are listed here. The format follows
 - Lint findings marked inside migration files: the statement is underlined and its tooltip
   gives the rule, the message and the fix. The text in the editor is checked, also before it is
   saved. Rollback scripts and files outside the Migrax project folder are skipped.
+- The status bar entry and the margin icons check again about 5 seconds after an entity,
+  migration or settings file changes, in the editor or on disk. Build output is ignored, so the
+  build the check starts does not trigger another one. Can be turned off in Settings > Tools >
+  Migrax.

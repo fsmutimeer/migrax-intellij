@@ -65,8 +65,7 @@ final class MigraxProjectDetector {
       try (Stream<Path> entries = Files.list(parent)) {
         entries
             .filter(Files::isDirectory)
-            .filter(p -> !p.getFileName().toString().startsWith("."))
-            .filter(p -> !SKIPPED.contains(p.getFileName().toString()))
+            .filter(p -> !isSkipped(p.getFileName().toString()))
             .sorted()
             .forEach(out::add);
       } catch (IOException | RuntimeException e) {
@@ -74,6 +73,11 @@ final class MigraxProjectDetector {
       }
     }
     return out;
+  }
+
+  /** Whether a folder with this name only holds build output or tool files. */
+  static boolean isSkipped(String folderName) {
+    return folderName.startsWith(".") || SKIPPED.contains(folderName);
   }
 
   /** Two quick file checks: a {@code .migrax} folder or a {@code migrax.properties} file. */

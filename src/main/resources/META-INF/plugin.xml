@@ -34,4 +34,9 @@
                 icon="/icons/migrax.svg"
                 factoryClass="org.migrax.intellij.MigraxToolWindowFactory"/>
   </extensions>
+
+  <projectListeners>
+    <listener class="org.migrax.intellij.MigraxFileChangeListener"
+              topic="com.intellij.openapi.vfs.newvfs.BulkFileListener"/>
+  </projectListeners>
 </idea-plugin>

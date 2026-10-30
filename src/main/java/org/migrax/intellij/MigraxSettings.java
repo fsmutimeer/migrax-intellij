@@ -19,6 +19,8 @@ public final class MigraxSettings implements PersistentStateComponent<MigraxSett
   public static final class State {
     /** Path to the Migrax command (or its folder); empty means: look on PATH. */
     public String cliPath = "";
+    /** Check again after an entity, migration or settings file changed. */
+    public boolean checkOnChange = true;
   }
 
   private State state = new State();
@@ -43,5 +45,13 @@ public final class MigraxSettings implements PersistentStateComponent<MigraxSett
 
   public void setCliPath(String cliPath) {
     state.cliPath = cliPath == null ? "" : cliPath.trim();
+  }
+
+  public boolean isCheckOnChange() {
+    return state.checkOnChange;
+  }
+
+  public void setCheckOnChange(boolean checkOnChange) {
+    state.checkOnChange = checkOnChange;
   }
 }

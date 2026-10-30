@@ -2,10 +2,12 @@ package org.migrax.intellij;
 
 import com.google.gson.JsonElement;
 import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.Service;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.impl.status.widget.StatusBarWidgetsManager;
+import com.intellij.util.Alarm;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
@@ -13,23 +15,31 @@ import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Keeps the latest {@link MigraxHealth} of a project for the status bar. It asks the command
  * for the migration list and then for the entity changes, one after the other, and tells its
- * listeners (on the editor thread) when the answer is in.
+ * listeners (on the editor thread) when the answer is in. After a file change it asks again,
+ * once the changes stop (see {@link MigraxFileChangeListener}).
  */
 @Service(Service.Level.PROJECT)
-public final class MigraxHealthService {
+public final class MigraxHealthService implements Disposable {
 
   // check reads the entities and may build the project first.
   private static final long CHECK_TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
+  // Saves come in bursts (save all, a pull, autosave while typing): wait for them to stop
+  // before checking, the check may build the project.
+  private static final int AFTER_CHANGE_DELAY_MILLIS = 5000;
 
   private final Project project;
   private final List<Runnable> listeners = new CopyOnWriteArrayList<>();
   // health and running are only used on the editor thread: refresh() and the callbacks.
   private MigraxHealth health = MigraxHealth.unavailable("Not checked yet");
   private boolean running;
+  // A file changed while a check was running: that check may have missed it.
+  private boolean againWhenDone;
+  private final Alarm afterChange = new Alarm(Alarm.ThreadToUse.SWING_THREAD, this);
   // Read by the editor's line markers in background read actions.
   private volatile MigraxEntityChanges entityChanges = MigraxEntityChanges.NONE;
   // These are also used off the editor thread (findRoot runs in background tasks).
@@ -75,6 +85,30 @@ public final class MigraxHealthService {
     running = true;
     MigraxCommands.run(
         project, "Migrax status", List.of("status", "--json"), this::onStatus, this::onProblem);
+  }
+
+  /** Asks again a little later, after the last of a burst of file changes. Any thread. */
+  void refreshSoon() {
+    if (!MigraxSettings.getInstance().isCheckOnChange()) {
+      return;
+    }
+    afterChange.cancelAllRequests();
+    afterChange.addRequest(this::refreshAfterChange, AFTER_CHANGE_DELAY_MILLIS);
+  }
+
+  private void refreshAfterChange() {
+    if (running) {
+      againWhenDone = true;
+    } else {
+      refresh();
+    }
+  }
+
+  /** The Migrax project folder once one was found, else null. Any thread. */
+  @Nullable
+  Path knownRoot() {
+    Path known = root;
+    return detected && known != null ? known.toAbsolutePath().normalize() : null;
   }
 
   /** True once a Migrax project was found in this IDE project (see {@link #findRoot}). */
@@ -130,7 +164,12 @@ public final class MigraxHealthService {
   private void handleStatus(MigraxResult result) {
     if (project.isDisposed()) {
       running = false;
+      againWhenDone = false;
       return;
+    }
+    if (result.cancelled()) {
+      // Cancelled by the user: do not start again because of a file change.
+      againWhenDone = false;
     }
     MigraxStatus status =
         result.cancelled() || result.timedOut()
@@ -160,7 +199,11 @@ public final class MigraxHealthService {
   private void handleCheck(MigraxStatus status, MigraxResult result) {
     if (project.isDisposed()) {
       running = false;
+      againWhenDone = false;
       return;
+    }
+    if (result.cancelled()) {
+      againWhenDone = false;
     }
     // The command exits 2 when there are changes but it still prints them.
     JsonElement json =
@@ -193,6 +236,15 @@ public final class MigraxHealthService {
     running = false;
     health = latest;
     listeners.forEach(Runnable::run);
+    if (againWhenDone) {
+      againWhenDone = false;
+      refresh();
+    }
+  }
+
+  @Override
+  public void dispose() {
+    // Nothing to release: the alarm is disposed with this service.
   }
 
   private static String orDefault(String text, String fallback) {

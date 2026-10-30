@@ -30,8 +30,11 @@ do not have to leave the editor.
 ## Known limitations
 
 - With several Migrax projects below one IDE project, the first one found is used.
-- The status bar entry and the margin icons refresh when the project opens, when you click the
-  status bar entry and when you refresh the Status tab, not yet when you save a file.
+- The status bar entry and the margin icons refresh when the project opens, about 5 seconds
+  after an entity, migration or settings file changes (saved, or changed on disk), when you
+  click the status bar entry and when you refresh the Status tab. That check may build the
+  project; turn it off in Settings > Tools > Migrax. The Plan tab still refreshes only on
+  request.
 - In a single-table inheritance hierarchy the icon is on the root class.
 - Lint marks show about a second after you stop typing (each check starts the command). The
   plugin does not read where migrations are configured: it checks `.sql` files in the Migrax

@@ -6,6 +6,7 @@ import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.options.Configurable;
 import com.intellij.openapi.ui.TextBrowseFolderListener;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.util.ui.FormBuilder;
 import com.intellij.util.ui.UIUtil;
@@ -24,6 +25,7 @@ public final class MigraxConfigurable implements Configurable {
 
   private TextFieldWithBrowseButton cliPath;
   private JBLabel status;
+  private JBCheckBox checkOnChange;
   private JPanel panel;
   private Timer pause;
   private int lookups;
@@ -64,10 +66,17 @@ public final class MigraxConfigurable implements Configurable {
     pause.setRepeats(false);
     JBLabel hint = new JBLabel("Leave empty to use the migrax command found on PATH.");
     hint.setForeground(UIUtil.getContextHelpForeground());
+    checkOnChange =
+        new JBCheckBox("Check again after an entity, migration or settings file changes");
+    JBLabel buildHint =
+        new JBLabel("The check may build the project. Without it, click the status bar entry.");
+    buildHint.setForeground(UIUtil.getContextHelpForeground());
     panel = FormBuilder.createFormBuilder()
         .addLabeledComponent("Migrax command:", cliPath)
         .addComponentToRightColumn(hint)
         .addComponentToRightColumn(status)
+        .addComponent(checkOnChange)
+        .addComponent(buildHint)
         .addComponentFillVertically(new JPanel(), 0)
         .getPanel();
     reset();
@@ -104,17 +113,23 @@ public final class MigraxConfigurable implements Configurable {
 
   @Override
   public boolean isModified() {
-    return !cliPath.getText().trim().equals(MigraxSettings.getInstance().getCliPath());
+    MigraxSettings settings = MigraxSettings.getInstance();
+    return !cliPath.getText().trim().equals(settings.getCliPath())
+        || checkOnChange.isSelected() != settings.isCheckOnChange();
   }
 
   @Override
   public void apply() {
-    MigraxSettings.getInstance().setCliPath(cliPath.getText());
+    MigraxSettings settings = MigraxSettings.getInstance();
+    settings.setCliPath(cliPath.getText());
+    settings.setCheckOnChange(checkOnChange.isSelected());
   }
 
   @Override
   public void reset() {
-    cliPath.setText(MigraxSettings.getInstance().getCliPath());
+    MigraxSettings settings = MigraxSettings.getInstance();
+    cliPath.setText(settings.getCliPath());
+    checkOnChange.setSelected(settings.isCheckOnChange());
   }
 
   @Override
@@ -125,6 +140,7 @@ public final class MigraxConfigurable implements Configurable {
     pause = null;
     cliPath = null;
     status = null;
+    checkOnChange = null;
     panel = null;
   }
 }
