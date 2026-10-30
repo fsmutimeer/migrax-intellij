@@ -64,7 +64,8 @@ public final class MigraxConfigurable implements Configurable {
     status = new JBLabel();
     pause = new Timer(300, event -> showStatus());
     pause.setRepeats(false);
-    JBLabel hint = new JBLabel("Leave empty to use the migrax command found on PATH.");
+    JBLabel hint = new JBLabel(
+        "Leave empty to use the migrax command found on PATH, else the one the plugin downloaded.");
     hint.setForeground(UIUtil.getContextHelpForeground());
     checkOnChange =
         new JBCheckBox("Check again after an entity, migration or settings file changes");
@@ -101,8 +102,11 @@ public final class MigraxConfigurable implements Configurable {
     ApplicationManager.getApplication().executeOnPooledThread(() -> {
       Optional<Path> found = MigraxCliLocator.forThisMachine().locate(configured);
       String text = found
-          .map(path -> "Found: " + path)
-          .orElse("Migrax command not found. Set the path above or add it to PATH.");
+          .map(path -> path.startsWith(MigraxDownload.root())
+              ? "Found: the Migrax the plugin downloaded (" + path + ")"
+              : "Found: " + path)
+          .orElse("Migrax command not found. Set the path above, add it to PATH, or download it"
+              + " from the notification the plugin shows when it first needs it.");
       ApplicationManager.getApplication().invokeLater(() -> {
         if (status != null && lookup == lookups) {
           status.setText(text);

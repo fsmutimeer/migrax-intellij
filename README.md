@@ -80,7 +80,8 @@ do not have to leave the editor.
   project folder, skipping `rollback` folders and build output.
 - Migrate and Roll Back work on the database in the project's settings. Other environments
   are shown in the Environments tab but cannot be migrated from the IDE.
-- The plugin finds the command through the path in Settings > Tools > Migrax, or on `PATH`.
+- The plugin finds the command through the path in Settings > Tools > Migrax, then on `PATH`,
+  then the copy it downloaded itself.
 
 The plugin does not contain migration logic. It runs the `migrax` command line and shows its
 JSON output, so it behaves exactly like the terminal.
@@ -100,8 +101,15 @@ On Windows in `cmd` or PowerShell, use `gradlew.bat` instead of `./gradlew`.
 ## Compatibility
 
 IntelliJ IDEA 2024.2 and newer (Community and Ultimate). Other JetBrains IDEs are not
-supported yet. The plugin needs the Migrax command
-line, version 0.17 or newer.
+supported yet.
+
+The plugin runs the Migrax command line, version 0.17 or newer, which needs Java 17 or newer.
+An installed Migrax (on `PATH`, or its path in Settings > Tools > Migrax) is used first. Without
+one, the plugin offers to download the newest Migrax release for itself (about 1 MB) into the
+IDE's own folder. It takes the version and its SHA-256 from the Migrax Scoop package, downloads
+only from the Migrax releases on GitHub and checks the file before it is unpacked; offline it
+uses the release it was built with. When a newer release is out, it offers the update once per
+session. An installed Migrax is never changed.
 
 ## License
 

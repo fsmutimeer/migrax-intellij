@@ -64,3 +64,7 @@ All notable changes to this plugin are listed here. The format follows
   script and copies its file name.
 - Set Up Migrax: in a project without Migrax, creates its folders in the chosen service folder
   and shows what Migrax detected.
+- Without an installed Migrax the plugin offers to download it: the newest release, checked
+  against its SHA-256, into the IDE's own folder, with an update offer when a newer one is out.
+- New icons from the Migrax logo.
+- The buttons and tabs update as soon as an answer is in; a deleted .migrax folder is noticed.

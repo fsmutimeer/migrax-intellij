@@ -61,6 +61,29 @@ public class MigraxCliLocatorTest {
   }
 
   @Test
+  public void theDownloadedCopyComesLast() throws IOException {
+    Path downloaded = launcher("download/bin", "migrax");
+    // Nothing installed: the downloaded copy.
+    assertEquals(
+        downloaded,
+        new MigraxCliLocator(false, "/nonexistent", downloaded.getParent())
+            .locate("")
+            .orElseThrow());
+    // An installed one on PATH wins.
+    Path installed = launcher("bin", "migrax");
+    assertEquals(
+        installed,
+        new MigraxCliLocator(false, installed.getParent().toString(), downloaded.getParent())
+            .locate("")
+            .orElseThrow());
+    // A wrong setting is not replaced by the downloaded copy either.
+    assertTrue(
+        new MigraxCliLocator(false, "", downloaded.getParent())
+            .locate(tmp.getRoot().toPath().resolve("nowhere").toString())
+            .isEmpty());
+  }
+
+  @Test
   public void nothingFoundGivesEmpty() {
     assertTrue(new MigraxCliLocator(false, "/nonexistent").locate("").isEmpty());
     assertTrue(new MigraxCliLocator(false, null).locate("").isEmpty());

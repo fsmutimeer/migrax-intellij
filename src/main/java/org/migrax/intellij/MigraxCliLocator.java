@@ -12,7 +12,8 @@ import java.util.Locale;
 import java.util.Optional;
 
 /**
- * Finds the Migrax command: the path from the settings first, then the folders on PATH.
+ * Finds the Migrax command: the path from the settings first, then the folders on PATH, then
+ * the copy the plugin downloaded ({@link MigraxDownload}), so an installed Migrax wins.
  *
  * <p>On Windows only {@code migrax.cmd}, {@code migrax.exe} and {@code migrax.bat} count: the
  * extensionless {@code migrax} next to them is a shell script that Windows cannot run.
@@ -21,14 +22,23 @@ final class MigraxCliLocator {
 
   private final boolean windows;
   private final List<Path> pathFolders;
+  private final Path downloaded;
 
   MigraxCliLocator(boolean windows, String pathVariable) {
-    this.windows = windows;
-    this.pathFolders = splitPath(pathVariable);
+    this(windows, pathVariable, null);
   }
 
+  /** @param downloaded the launcher folder of the downloaded copy, or null */
+  MigraxCliLocator(boolean windows, String pathVariable, Path downloaded) {
+    this.windows = windows;
+    this.pathFolders = splitPath(pathVariable);
+    this.downloaded = downloaded;
+  }
+
+  /** Reads the disk (the downloaded copies): background threads only. */
   static MigraxCliLocator forThisMachine() {
-    return new MigraxCliLocator(File.separatorChar == '\\', System.getenv("PATH"));
+    return new MigraxCliLocator(
+        File.separatorChar == '\\', System.getenv("PATH"), MigraxDownload.launcherFolder());
   }
 
   /** The command to run, or empty when none is found. */
@@ -42,7 +52,7 @@ final class MigraxCliLocator {
         return found;
       }
     }
-    return Optional.empty();
+    return downloaded == null ? Optional.empty() : inFolder(downloaded);
   }
 
   /** A file is used as it is; a folder is searched for the launcher. */

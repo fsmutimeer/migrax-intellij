@@ -13,6 +13,10 @@ import org.jetbrains.annotations.NotNull;
 /** Starts the Migrax command for a project, for the tool window tabs and the actions. */
 final class MigraxCommands {
 
+  static final String NOT_FOUND =
+      "The Migrax command was not found. Download it from the notification, or set the path of"
+          + " an installed one in Settings > Tools > Migrax.";
+
   private MigraxCommands() {}
 
   /** Runs the command with the default time limit; see the longer overload. */
@@ -83,10 +87,21 @@ final class MigraxCommands {
         Optional<Path> launcher =
             MigraxCliLocator.forThisMachine().locate(MigraxSettings.getInstance().getCliPath());
         if (launcher.isEmpty()) {
-          problem =
-              "The Migrax command was not found. Set its path in Settings > Tools > Migrax.";
+          String configured = MigraxSettings.getInstance().getCliPath();
+          if (configured == null || configured.isBlank()) {
+            problem = NOT_FOUND;
+            MigraxDownload.offer(project);
+          } else {
+            // A path set on purpose is not replaced by a download: the setting is wrong.
+            problem =
+                "The path in Settings > Tools > Migrax is not a Migrax command: "
+                    + configured.trim()
+                    + ". Correct it, or clear it to use the one on PATH or to download one.";
+          }
           return;
         }
+        // Only for the plugin's own download, once per IDE session.
+        MigraxDownload.checkForUpdate(project, launcher.get());
         MigraxCli cli = new MigraxCli(launcher.get(), folder.get(), timeoutMillis);
         for (List<String> args : runs) {
           MigraxResult result = cli.run(args, indicator, cancellable);
