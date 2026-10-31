@@ -1,7 +1,7 @@
 package org.migrax.intellij;
 
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
@@ -214,8 +214,8 @@ final class MigraxGenerator {
               ApplicationManager.getApplication()
                   .invokeLater(
                       () -> {
-                        FileEditorManager editors = FileEditorManager.getInstance(project);
-                        found.forEach(file -> editors.openFile(file, true));
+                        found.forEach(
+                            file -> new OpenFileDescriptor(project, file).navigate(true));
                       },
                       project.getDisposed());
             });

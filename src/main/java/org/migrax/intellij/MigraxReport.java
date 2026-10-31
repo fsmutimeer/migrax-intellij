@@ -55,7 +55,7 @@ final class MigraxReport {
       MigraxNotifications.error(project, result.errorMessage());
       return;
     }
-    BrowserUtil.browse(page.toFile());
+    BrowserUtil.browse(page.toUri());
     String summary = summary(result.stdout());
     MigraxNotifications.info(
         project, "Opened the report in the browser" + (summary == null ? "." : ": " + summary));

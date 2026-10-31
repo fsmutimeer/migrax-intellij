@@ -174,6 +174,18 @@ public class MigraxDownloadTest {
   }
 
   @Test
+  public void deletesAFolderWithEverythingInIt() throws Exception {
+    Path folder = tmp.newFolder("work").toPath();
+    Files.createDirectories(folder.resolve("migrax/lib"));
+    Files.writeString(folder.resolve("migrax/lib/migrax.jar"), "jar");
+    Files.writeString(folder.resolve("migrax.zip"), "zip");
+    MigraxDownload.delete(folder);
+    assertFalse(Files.exists(folder));
+    // A folder that is already gone is no problem.
+    MigraxDownload.delete(folder);
+  }
+
+  @Test
   public void checksumIsTheUsualHex() throws Exception {
     Path file = tmp.newFile().toPath();
     Files.writeString(file, "abc", StandardCharsets.US_ASCII);

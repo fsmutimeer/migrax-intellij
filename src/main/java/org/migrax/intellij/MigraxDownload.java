@@ -12,7 +12,6 @@ import com.intellij.openapi.progress.ProcessCanceledException;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.util.io.Decompressor;
 import com.intellij.util.io.HttpRequests;
 import java.io.IOException;
@@ -23,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -314,7 +314,7 @@ final class MigraxDownload {
         indicator.checkCanceled();
         unpack(release, zip, root, work);
       } finally {
-        FileUtil.delete(work);
+        delete(work);
       }
     }
     removeOlder(root, release.version());
@@ -379,15 +379,37 @@ final class MigraxDownload {
     for (Path folder : folders) {
       String name = folder.getFileName().toString();
       if (name.startsWith("old-")) {
-        FileUtil.delete(folder.toFile());
+        delete(folder);
       } else if (STABLE.matcher(name).matches() && compare(name, keep) < 0) {
         Path old = root.resolve("old-" + name);
         try {
           Files.move(folder, old, StandardCopyOption.ATOMIC_MOVE);
-          FileUtil.delete(old.toFile());
+          delete(old);
         } catch (IOException e) {
           // In use: left for the next download.
         }
+      }
+    }
+  }
+
+  /**
+   * Deletes a folder and everything in it, never throwing: a file that cannot go (one still in
+   * use on Windows) is left and the rest is still removed; a folder that cannot be read is left
+   * whole. Plain Java, as the IDE's own helper for this is being removed from newer IDE versions.
+   */
+  static void delete(Path folder) {
+    List<Path> paths;
+    try (Stream<Path> walked = Files.walk(folder)) {
+      // Deepest first, so each folder is empty when its turn comes.
+      paths = walked.sorted(Comparator.reverseOrder()).toList();
+    } catch (IOException | RuntimeException e) {
+      return;
+    }
+    for (Path path : paths) {
+      try {
+        Files.deleteIfExists(path);
+      } catch (IOException e) {
+        // In use: left for the next time.
       }
     }
   }
