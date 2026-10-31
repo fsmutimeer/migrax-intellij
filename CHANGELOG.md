@@ -4,6 +4,13 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the plugin uses
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-10-31
+
+### Fixed
+- Stopped using IDE functions that newer IntelliJ versions remove (deleting the downloaded
+  Migrax folders, opening the HTML report and opening generated files), so these keep working
+  on IntelliJ IDEA 2025.2 and later, including 2026.3.
+
 ## [0.1.0] - 2026-10-30
 
 ### Added

@@ -29,7 +29,9 @@
   ]]></description>
 
   <change-notes><![CDATA[
-    <p>First release.</p>
+    <p>0.1.1: keeps downloading Migrax, opening the report and opening generated files working
+    on IntelliJ IDEA 2025.2 and later, including 2026.3.</p>
+    <p>0.1.0: first release.</p>
   ]]></change-notes>
 
   <depends>com.intellij.modules.platform</depends>
