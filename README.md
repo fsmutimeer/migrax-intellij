@@ -4,7 +4,10 @@ Plugin for [Migrax](https://migrax.org), which generates SQL migrations from you
 entities. The plugin shows what Migrax found and runs the Migrax command line for you, so you
 do not have to leave the editor.
 
-**Status: early development.** Nothing is published to the JetBrains Marketplace yet.
+**Status: early version.** Install it from the
+[JetBrains Marketplace](https://plugins.jetbrains.com/plugin/35665-migrax): in IntelliJ IDEA open
+**Settings > Plugins > Marketplace**, search for **Migrax** and click **Install**. The full guide
+is at [migrax.org/intellij](https://migrax.org/intellij/).
 
 ## What works today
 
