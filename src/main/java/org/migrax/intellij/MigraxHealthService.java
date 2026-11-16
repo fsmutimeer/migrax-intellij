@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -40,6 +41,8 @@ public final class MigraxHealthService implements Disposable {
   // A file changed while a check was running: that check may have missed it.
   private boolean againWhenDone;
   private final Alarm afterChange = new Alarm(Alarm.ThreadToUse.SWING_THREAD, this);
+  // Set by a change other than a Java or Kotlin source, until the tabs were loaded again.
+  private final AtomicBoolean notOnlySourcesChanged = new AtomicBoolean();
   // Read by the editor's line markers in background read actions.
   private volatile MigraxEntityChanges entityChanges = MigraxEntityChanges.NONE;
   // These are also used off the editor thread (findRoot runs in background tasks).
@@ -86,13 +89,27 @@ public final class MigraxHealthService implements Disposable {
         project, "Migrax status", List.of("status", "--json"), this::onStatus, this::onProblem);
   }
 
-  /** Asks again a little later, after the last of a burst of file changes. Any thread. */
-  void refreshSoon() {
+  /**
+   * Asks again a little later, after the last of a burst of file changes, and loads the tool
+   * window's tabs again, which too may show an old answer. Only when "Check again after an
+   * entity, migration or settings file changes" is on. Any thread.
+   *
+   * @param onlySources whether only Java or Kotlin sources changed: then of the tabs only Plan
+   *     can change. One burst with any other change loads every tab.
+   */
+  void refreshSoon(boolean onlySources) {
     if (!MigraxSettings.getInstance().isCheckOnChange()) {
       return;
     }
+    if (!onlySources) {
+      notOnlySourcesChanged.set(true);
+    }
     afterChange.cancelAllRequests();
-    afterChange.addRequest(this::refreshAfterChange, AFTER_CHANGE_DELAY_MILLIS);
+    afterChange.addRequest(
+        () ->
+            MigraxToolWindowFactory.refreshAfterFileChange(
+                project, !notOnlySourcesChanged.getAndSet(false)),
+        AFTER_CHANGE_DELAY_MILLIS);
   }
 
   /**

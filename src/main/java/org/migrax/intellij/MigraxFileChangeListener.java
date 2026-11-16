@@ -31,17 +31,31 @@ public final class MigraxFileChangeListener implements BulkFileListener {
     }
     MigraxHealthService health = MigraxHealthService.getInstance(project);
     Path root = health.knownRoot();
+    boolean matters = false;
+    boolean lintResultsOld = false;
+    boolean notOnlySources = false;
     for (VFileEvent event : events) {
       for (String path : paths(event)) {
-        boolean matters =
-            root == null
-                ? MigraxWatchedFiles.marksAProject(path)
-                : MigraxWatchedFiles.matters(root, path) || MigraxWatchedFiles.movesAMarker(path);
-        if (matters) {
-          health.refreshSoon();
-          return;
+        if (root == null) {
+          matters |= MigraxWatchedFiles.marksAProject(path);
+          continue;
         }
+        boolean inProject = MigraxWatchedFiles.matters(root, path);
+        // Lint reads the database kind from the settings or the snapshot: results kept so far
+        // may be wrong.
+        lintResultsOld |= MigraxWatchedFiles.changesLintResults(root, path);
+        matters |= inProject || MigraxWatchedFiles.movesAMarker(path);
+        // An entity source changes only what the Plan tab shows, not the other tabs.
+        notOnlySources |= MigraxWatchedFiles.movesAMarker(path)
+            || inProject && !MigraxWatchedFiles.isSource(path);
       }
+    }
+    if (lintResultsOld) {
+      MigraxSqlLintAnnotator.forgetResults(project);
+    }
+    if (matters) {
+      // Before a project was found, a new marker changes everything.
+      health.refreshSoon(root != null && !notOnlySources);
     }
   }
 

@@ -4,6 +4,26 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the plugin uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- A migration file whose text did not change is not checked again for lint marks (for ten
+  minutes, or until a settings file such as `migrax.properties` or `application-dev.yml`, or
+  `.migrax/snapshot.json`, changes), so the editor no longer starts Migrax every time the
+  analysis runs again.
+- The Status, Plan, Lint and Environments tabs now also follow a changed entity, migration or
+  settings file (saved, pulled or generated elsewhere), as the status bar entry already did,
+  when "Check again after an entity, migration or settings file changes" is on. The tab on
+  screen loads again, the others when you open them. Saving an entity reloads only the Plan
+  tab.
+
+### Fixed
+- Lint marks in MySQL, MariaDB and TiDB migration files: after a string with an escaped quote
+  such as `'it\'s'`, the findings of later statements could be shown above the file instead of
+  under the statement.
+- Changing a profile settings file (`application-dev.yml`, `microprofile-config-prod.properties`)
+  now updates the status bar entry and the margin icons too.
+
 ## [0.1.1] - 2026-10-31
 
 ### Fixed

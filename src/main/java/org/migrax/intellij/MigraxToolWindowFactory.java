@@ -57,6 +57,24 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
    * may build the project). Editor thread.
    */
   static void refreshStatus(Project project) {
+    refreshTabs(project, true);
+  }
+
+  /**
+   * After a file changed (an entity saved, a migration generated elsewhere, a pull): the same as
+   * {@link #refreshStatus}, except that the Status tab too loads again only when it is on screen
+   * or next shown. When only Java or Kotlin sources changed, only the Plan tab: the others show
+   * migrations, lint and databases, and Environments connects to every database. Editor thread.
+   */
+  static void refreshAfterFileChange(Project project, boolean onlySources) {
+    refreshTabs(project, false, onlySources);
+  }
+
+  private static void refreshTabs(Project project, boolean statusNow) {
+    refreshTabs(project, statusNow, false);
+  }
+
+  private static void refreshTabs(Project project, boolean statusNow, boolean onlyPlan) {
     if (project.isDisposed()) {
       return;
     }
@@ -66,7 +84,10 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
       Object onScreen = window.isVisible() ? tabs.getSelectedComponent() : null;
       for (int i = 0; i < tabs.getTabCount(); i++) {
         Object tab = tabs.getComponentAt(i);
-        if (tab instanceof MigraxStatusPanel status) {
+        if (onlyPlan && !(tab instanceof MigraxPlanPanel)) {
+          continue;
+        }
+        if (statusNow && tab instanceof MigraxStatusPanel status) {
           status.refresh();
         } else if (tab != onScreen || !reloadIfLoaded(tab)) {
           // A tab still loading may finish with the old answer: it loads again when next shown.
@@ -87,6 +108,8 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
         && environments.hasRun()
         && !environments.isLoading()) {
       environments.refresh();
+    } else if (tab instanceof MigraxStatusPanel status && status.hasRun() && !status.isLoading()) {
+      status.refresh();
     } else {
       return false;
     }
@@ -94,7 +117,9 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
   }
 
   private static void markStale(Object tab) {
-    if (tab instanceof MigraxPlanPanel plan) {
+    if (tab instanceof MigraxStatusPanel status) {
+      status.markStale();
+    } else if (tab instanceof MigraxPlanPanel plan) {
       plan.markStale();
     } else if (tab instanceof MigraxLintPanel lint) {
       lint.markStale();
@@ -132,7 +157,9 @@ public final class MigraxToolWindowFactory implements ToolWindowFactory, DumbAwa
 
   /** Loads the tab if it never loaded or is out of date (see {@link #refreshStatus}). */
   private static void loadIfNeeded(Object tab) {
-    if (tab instanceof MigraxPlanPanel plan && !plan.hasRun()) {
+    if (tab instanceof MigraxStatusPanel status && !status.hasRun()) {
+      status.refresh();
+    } else if (tab instanceof MigraxPlanPanel plan && !plan.hasRun()) {
       plan.refresh();
     } else if (tab instanceof MigraxLintPanel lint && !lint.hasRun()) {
       lint.refresh();

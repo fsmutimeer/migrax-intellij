@@ -39,6 +39,8 @@ final class MigraxStatusPanel extends JPanel {
   private final JBLabel summary = new JBLabel(" ");
   // The command runs; Refresh in the toolbar waits for it.
   private boolean loading;
+  // The list was asked for and has not been marked out of date since.
+  private boolean ran;
   private final DefaultTableModel model =
       new DefaultTableModel(new Object[] {"Migration", "State", "Detail"}, 0) {
         @Override
@@ -113,16 +115,31 @@ final class MigraxStatusPanel extends JPanel {
     return loading;
   }
 
+  /** True once a refresh was started and nothing made the list out of date since. */
+  boolean hasRun() {
+    return ran;
+  }
+
+  /** What the tab shows may be out of date: it loads again when it is next opened. */
+  void markStale() {
+    ran = false;
+  }
+
   /** Runs {@code migrax status --json} in the background and shows the result. */
   void refresh() {
     loading = true;
+    ran = true;
     summary.setText("Reading migrations...");
     MigraxCommands.run(
         project,
         "Migrax status",
         List.of("status", "--json"),
         this::showResult,
-        message -> show(message, List.of()));
+        message -> {
+          // The command could not start: try again when the tab is next shown.
+          ran = false;
+          show(message, List.of());
+        });
   }
 
   private void showResult(MigraxResult result) {

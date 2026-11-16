@@ -97,6 +97,36 @@ public class MigraxSqlLocatorTest {
   }
 
   @Test
+  public void anOpenQuoteDoesNotReachTheNextStatement() {
+    // MySQL reads \' as an escaped quote; the command's comment remover reads it as the end of
+    // the string and then opens another one, which it forgets at the end of the statement.
+    String text = "insert into t values ('it\\'s');\ndrop /* why */ table a;";
+    assertEquals("drop /* why */ table a", marked(text, "drop table a"));
+  }
+
+  @Test
+  public void aBackslashBeforeAQuoteEndsTheStringInOtherDatabases() {
+    // PostgreSQL: 'C:\' is a complete string, the comment in the next statement is a comment.
+    String text = "insert into t values ('C:\\');\ndrop /* why */ table a;";
+    assertEquals("drop /* why */ table a", marked(text, "drop table a"));
+  }
+
+  @Test
+  public void aQuoteWithASemicolonInsideDoesNotEndTheStatement() {
+    String text = "insert into t values ('a;b');\ndrop /* why */ table a;";
+    assertEquals("drop /* why */ table a", marked(text, "drop table a"));
+    assertEquals(
+        "insert into t values ('a;b')", marked(text, "insert into t values ('a;b')"));
+  }
+
+  @Test
+  public void aStatementBeforeTheEscapedQuoteIsStillFound() {
+    String text = "drop table b;\ninsert into t values ('it\\'s');\ndrop table a;";
+    assertEquals("drop table b", marked(text, "drop table b"));
+    assertEquals("drop table a", marked(text, "drop table a"));
+  }
+
+  @Test
   public void unknownOrEmptyStatementsAreNotFound() {
     assertNull(marked("create table t (id int);", "create table u (id int)"));
     assertNull(marked("create table t (id int);", ""));

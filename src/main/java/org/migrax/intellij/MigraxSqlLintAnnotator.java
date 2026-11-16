@@ -1,5 +1,6 @@
 package org.migrax.intellij;
 
+import com.intellij.codeInsight.daemon.DaemonCodeAnalyzer;
 import com.intellij.lang.annotation.AnnotationBuilder;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.ExternalAnnotator;
@@ -37,11 +38,33 @@ public final class MigraxSqlLintAnnotator
   // Linting reads only the file, it never builds the project.
   private static final long TIMEOUT_MILLIS = TimeUnit.SECONDS.toMillis(30);
 
+  // The command lints a file by its text alone (and the project's settings), so the marks of
+  // the same text are the same. Without this every analysis pass starts a Java process, also
+  // when the file did not change. The time limit covers a setting that changed where the
+  // plugin does not look (an environment variable, a database that was switched).
+  private static final MigraxTimedCache<CacheKey, List<Mark>> RESULTS =
+      new MigraxTimedCache<>(
+          30, TimeUnit.MINUTES.toMillis(10), () -> System.nanoTime() / 1_000_000);
+
   /** What the background step needs: the file and the text to lint. */
   record Input(Project project, Path file, String text) {}
 
+  /** What a lint result depends on: the command that ran, where, and the text. */
+  private record CacheKey(Path launcher, Path root, Path file, String text) {}
+
   /** A finding and where it is in the text; no range when the statement was not found. */
   record Mark(MigraxFinding finding, @Nullable TextRange range) {}
+
+  /**
+   * Forgets every stored result: a settings file or the snapshot changed, and lint may read it.
+   * The open migration files are checked again, so their marks follow at once.
+   */
+  static void forgetResults(Project project) {
+    RESULTS.clear();
+    if (!project.isDisposed()) {
+      DaemonCodeAnalyzer.getInstance(project).restart();
+    }
+  }
 
   @Override
   public @Nullable Input collectInformation(
@@ -95,6 +118,13 @@ public final class MigraxSqlLintAnnotator
     if (launcher.isEmpty()) {
       return null;
     }
+    CacheKey key = new CacheKey(launcher.get(), root.get(), input.file(), input.text());
+    List<Mark> known = RESULTS.get(key);
+    if (known != null) {
+      return known;
+    }
+    // Read before the command runs: a settings change while it runs makes the result too old.
+    long generation = RESULTS.generation();
     Path copy = null;
     try {
       copy = Files.createTempFile("migrax-lint-", ".sql");
@@ -117,6 +147,7 @@ public final class MigraxSqlLintAnnotator
       for (MigraxFinding finding : lint.findings()) {
         marks.add(new Mark(finding, locator.find(finding.sql())));
       }
+      RESULTS.put(key, marks, generation);
       return marks;
     } catch (IOException e) {
       return null;

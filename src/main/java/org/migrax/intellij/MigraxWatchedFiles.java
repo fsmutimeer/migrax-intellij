@@ -4,6 +4,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Which changed files make the status bar entry and the margin icons out of date: sources (the
@@ -35,6 +36,42 @@ final class MigraxWatchedFiles {
     }
   }
 
+  // Profile files: application-dev.yml, microprofile-config-prod.properties.
+  private static final Pattern PROFILE_SETTING_FILE =
+      Pattern.compile(
+          "application-[^/]+\\.(properties|yml|yaml)|microprofile-config-[^/]+\\.properties");
+
+  /** Whether the path (with "/") is a file the command reads its settings from. */
+  static boolean isSettingsFile(String path) {
+    return isSettingsName(path.substring(path.lastIndexOf('/') + 1));
+  }
+
+  private static boolean isSettingsName(String name) {
+    return SETTING_FILES.contains(name) || PROFILE_SETTING_FILE.matcher(name).matches();
+  }
+
+  /**
+   * Whether a change of this file can change lint results: a settings file inside the project
+   * (not a copy in build output, which the build rewrites after every check), or the snapshot,
+   * where the command finds the database kind when no database is configured.
+   */
+  static boolean changesLintResults(Path root, String path) {
+    if (path.endsWith("/.migrax/snapshot.json")) {
+      try {
+        return Path.of(path).normalize().equals(root.resolve(".migrax/snapshot.json"));
+      } catch (InvalidPathException e) {
+        return false;
+      }
+    }
+    return isSettingsFile(path) && matters(root, path);
+  }
+
+  /** Whether the path (with "/") is a Java or Kotlin source: an entity, as far as we know. */
+  static boolean isSource(String path) {
+    String lower = path.toLowerCase(Locale.ROOT);
+    return lower.endsWith(".java") || lower.endsWith(".kt");
+  }
+
   /** Whether a file in a folder makes it a Migrax project, which was not found before. */
   static boolean marksAProject(String path) {
     return path.endsWith("/migrax.properties") || path.contains("/.migrax/")
@@ -64,7 +101,7 @@ final class MigraxWatchedFiles {
       }
     }
     String name = relative.getFileName().toString();
-    if (SETTING_FILES.contains(name)) {
+    if (isSettingsName(name)) {
       return true;
     }
     int dot = name.lastIndexOf('.');

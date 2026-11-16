@@ -26,6 +26,16 @@ public class MigraxWatchedFilesTest {
   }
 
   @Test
+  public void settingsFilesAreToldApartFromSources() {
+    assertTrue(MigraxWatchedFiles.isSettingsFile("/work/shop/migrax.properties"));
+    assertTrue(MigraxWatchedFiles.isSettingsFile("/work/shop/src/main/resources/application.yml"));
+    assertTrue(MigraxWatchedFiles.isSettingsFile("persistence.xml"));
+    assertFalse(MigraxWatchedFiles.isSettingsFile("/work/shop/db/migration/0002_risky.sql"));
+    assertFalse(MigraxWatchedFiles.isSettingsFile("/work/shop/src/main/java/Category.java"));
+    assertFalse(MigraxWatchedFiles.isSettingsFile("/work/shop/not-migrax.properties.bak"));
+  }
+
+  @Test
   public void buildOutputAndToolFoldersDoNot() {
     // check builds the project: its output must not start the next check.
     assertFalse(matters("target/classes/db/migration/0001_initial.sql"));
@@ -76,5 +86,39 @@ public class MigraxWatchedFilesTest {
   public void filesOutsideTheProjectFolderDoNot() {
     assertFalse(MigraxWatchedFiles.matters(ROOT, ROOT.resolveSibling("other/A.java")));
     assertFalse(MigraxWatchedFiles.matters(ROOT, ROOT));
+  }
+
+  @Test
+  public void profileSettingsFilesCount() {
+    assertTrue(MigraxWatchedFiles.isSettingsFile("/work/shop/application-dev.yml"));
+    assertTrue(MigraxWatchedFiles.isSettingsFile("/work/shop/application-prod.properties"));
+    assertTrue(MigraxWatchedFiles.isSettingsFile("microprofile-config-test.properties"));
+    assertFalse(MigraxWatchedFiles.isSettingsFile("/work/shop/application-dev.yml.bak"));
+    assertTrue(matters("src/main/resources/application-dev.yaml"));
+  }
+
+  @Test
+  public void lintResultsFollowSettingsInTheProjectAndTheSnapshot() {
+    String root = ROOT.toString().replace('\\', '/');
+    assertTrue(MigraxWatchedFiles.changesLintResults(ROOT, root + "/migrax.properties"));
+    assertTrue(
+        MigraxWatchedFiles.changesLintResults(
+            ROOT, root + "/src/main/resources/application-dev.yml"));
+    assertTrue(MigraxWatchedFiles.changesLintResults(ROOT, root + "/.migrax/snapshot.json"));
+    // A copy the build writes, a snapshot of another folder, and a migration do not.
+    assertFalse(
+        MigraxWatchedFiles.changesLintResults(ROOT, root + "/target/classes/application.yml"));
+    assertFalse(
+        MigraxWatchedFiles.changesLintResults(ROOT, root + "/other/.migrax/snapshot.json"));
+    assertFalse(
+        MigraxWatchedFiles.changesLintResults(ROOT, root + "/db/migration/0002_risky.sql"));
+  }
+
+  @Test
+  public void sourcesAreJavaAndKotlin() {
+    assertTrue(MigraxWatchedFiles.isSource("/work/shop/src/main/java/Category.java"));
+    assertTrue(MigraxWatchedFiles.isSource("/work/shop/src/main/kotlin/Order.KT"));
+    assertFalse(MigraxWatchedFiles.isSource("/work/shop/db/migration/0002_risky.sql"));
+    assertFalse(MigraxWatchedFiles.isSource("/work/shop/migrax.properties"));
   }
 }
