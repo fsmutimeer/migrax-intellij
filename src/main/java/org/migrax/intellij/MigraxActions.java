@@ -1,5 +1,6 @@
 package org.migrax.intellij;
 
+import com.intellij.openapi.actionSystem.ActionPlaces;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -45,7 +46,9 @@ public final class MigraxActions {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-      if (!e.isFromContextMenu()) {
+      // By place: on 2024.2 AnActionEvent.isFromContextMenu() is marked for removal, and its
+      // replacement only came later. The IDE itself decides by place in the same way.
+      if (!ActionPlaces.isPopupPlace(e.getPlace())) {
         e.getPresentation().setEnabledAndVisible(e.getProject() != null);
         return;
       }

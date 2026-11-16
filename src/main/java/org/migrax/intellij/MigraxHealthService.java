@@ -17,6 +17,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.TestOnly;
 
 /**
  * Keeps the latest {@link MigraxHealth} of a project for the status bar. It asks the command
@@ -139,6 +140,12 @@ public final class MigraxHealthService implements Disposable {
   /** True while a Migrax project is found in this IDE project (see {@link #findRoot}). */
   boolean isDetected() {
     return detected;
+  }
+
+  /** For tests: the light test project has no .migrax folder on disk. */
+  @TestOnly
+  void setDetected(boolean detected) {
+    this.detected = detected;
   }
 
   /**
