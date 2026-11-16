@@ -28,8 +28,10 @@ is at [migrax.org/intellij](https://migrax.org/intellij/).
   before you save it, with `migrax lint`.
 
 - Buttons down the left side of the Migrax tool window, and the same actions in a
-  **Tools > Migrax** menu. An action with nothing to do (no pending migrations, nothing
-  applied, no entity changes) is greyed out and its tooltip says why:
+  **Tools > Migrax** menu. In a Migrax project the Migrax menu is also in the right-click menu
+  of the Project view, and of the editor for SQL, Java and Kotlin files. An action with nothing
+  to do (no pending migrations, nothing applied, no entity changes) is greyed out and its
+  tooltip says why:
   - *Set Up Migrax...* (only in a project without Migrax yet, also as a link in the Status
     tab) asks for the service's folder, creates the `.migrax` and migration folders there and
     shows what Migrax detected: build tool, entity package, database and naming.

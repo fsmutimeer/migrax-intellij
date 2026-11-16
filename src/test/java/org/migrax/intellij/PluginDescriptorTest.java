@@ -52,6 +52,19 @@ public class PluginDescriptorTest {
       }
       assertTrue(groupIds.contains("Migrax.ToolWindowToolbar"));
       assertTrue(groupIds.contains(MigraxEntityLineMarkerProvider.ACTIONS));
+      // The Migrax menu: Tools and the two right-click menus.
+      Set<String> menuParents = new HashSet<>();
+      for (int i = 0; i < groups.getLength(); i++) {
+        Element group = (Element) groups.item(i);
+        if ("Migrax.Menu".equals(group.getAttribute("id"))) {
+          NodeList addTo = group.getElementsByTagName("add-to-group");
+          for (int j = 0; j < addTo.getLength(); j++) {
+            menuParents.add(((Element) addTo.item(j)).getAttribute("group-id"));
+          }
+        }
+      }
+      assertEquals(
+          Set.of("ToolsMenu", "ProjectViewPopupMenu", "EditorPopupMenu"), menuParents);
       // The margin icon's popup: an empty group would open nothing.
       for (int i = 0; i < groups.getLength(); i++) {
         Element group = (Element) groups.item(i);

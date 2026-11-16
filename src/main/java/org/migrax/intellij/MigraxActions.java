@@ -3,15 +3,20 @@ package org.migrax.intellij;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.CommonDataKeys;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
+import java.util.Locale;
+import java.util.Set;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The actions of the Tools > Migrax menu and the tool window's toolbar, registered in plugin.xml.
+ * The actions of the Tools > Migrax menu, the right-click menus and the tool window's toolbar,
+ * registered in plugin.xml.
  * Shown only in projects that use Migrax. Each one starts its command in the background.
  */
 public final class MigraxActions {
@@ -24,10 +29,14 @@ public final class MigraxActions {
   }
 
   /**
-   * The Tools > Migrax submenu: in a project without Migrax it holds only Set Up Migrax. A group
-   * with hidden actions would still show, greyed out.
+   * The Migrax submenu of Tools: in a project without Migrax it holds only Set Up Migrax. A group
+   * with hidden actions would still show, greyed out. The same submenu is in the right-click
+   * menus of the Project view and the editor, there only in projects that use Migrax, and in the
+   * editor only for the files Migrax works with, so other projects and files keep short menus.
    */
   public static final class Menu extends DefaultActionGroup implements DumbAware {
+
+    private static final Set<String> MIGRAX_FILES = Set.of("sql", "java", "kt");
 
     @Override
     public @NotNull ActionUpdateThread getActionUpdateThread() {
@@ -36,7 +45,32 @@ public final class MigraxActions {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-      e.getPresentation().setEnabledAndVisible(e.getProject() != null);
+      if (!e.isFromContextMenu()) {
+        e.getPresentation().setEnabledAndVisible(e.getProject() != null);
+        return;
+      }
+      if (!usesMigrax(e)) {
+        e.getPresentation().setEnabledAndVisible(false);
+        return;
+      }
+      // Only a right-click inside an editor provides EDITOR; the Project view's popup has none,
+      // even while an editor is open.
+      boolean inEditor = e.getData(CommonDataKeys.EDITOR) != null;
+      VirtualFile file = e.getData(CommonDataKeys.VIRTUAL_FILE);
+      e.getPresentation()
+          .setEnabledAndVisible(
+              showInContextMenu(true, inEditor, file == null ? null : file.getExtension()));
+    }
+
+    /** The rule for the right-click menus: Migrax projects, and in the editor Migrax files. */
+    static boolean showInContextMenu(
+        boolean usesMigrax, boolean inEditor, @Nullable String extension) {
+      return usesMigrax && (!inEditor || isMigraxFile(extension));
+    }
+
+    /** Whether a file with this extension is a migration or may hold an entity. */
+    static boolean isMigraxFile(@Nullable String extension) {
+      return extension != null && MIGRAX_FILES.contains(extension.toLowerCase(Locale.ROOT));
     }
   }
 

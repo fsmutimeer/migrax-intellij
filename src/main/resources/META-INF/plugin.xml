@@ -20,6 +20,9 @@
       <li><b>Drift</b>, <b>Verify</b> on a throwaway database, an HTML <b>Report</b>,
       zero-downtime changes, <b>Doctor</b> and <b>Set Up Migrax</b> for a new project.</li>
     </ul>
+    <p><b>Where to find it:</b> the <b>Migrax</b> tool window at the bottom, <b>Tools &gt;
+    Migrax</b>, or right-click a file or folder in a Migrax project (and a SQL, Java or Kotlin
+    file in the editor).</p>
     <p>The plugin runs the Migrax command line (0.17 or newer, needs Java 17), so the IDE gives
     the same result as your terminal and CI. Without an installed one it offers to download the
     Migrax release from GitHub, checked against its SHA-256.</p>
@@ -70,6 +73,8 @@
     <group id="Migrax.Menu" class="org.migrax.intellij.MigraxActions$Menu" text="Migrax"
            popup="true" icon="/icons/migrax.svg">
       <add-to-group group-id="ToolsMenu" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
       <action id="Migrax.Init" class="org.migrax.intellij.MigraxActions$Init"
               text="Set Up Migrax..." icon="AllIcons.General.Settings"
               description="Create the Migrax folders and show what Migrax detected"/>
