@@ -55,6 +55,22 @@ final class MigraxCliLocator {
     return downloaded == null ? Optional.empty() : inFolder(downloaded);
   }
 
+  /**
+   * Whether the path set in the settings no longer exists at all, as when a Migrax folder was
+   * deleted or moved. Unlike a wrong path that exists, it can only be stale. Reads the disk.
+   */
+  static boolean isGone(String configuredPath) {
+    if (configuredPath == null || configuredPath.isBlank()) {
+      return false;
+    }
+    try {
+      return Files.notExists(Paths.get(configuredPath.trim()));
+    } catch (InvalidPathException e) {
+      // Not a path at all: a typo to correct, not a stale setting.
+      return false;
+    }
+  }
+
   /** A file is used as it is; a folder is searched for the launcher. */
   private Optional<Path> fromSetting(String configuredPath) {
     Path path;

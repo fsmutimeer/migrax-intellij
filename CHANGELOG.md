@@ -10,6 +10,10 @@ All notable changes to this plugin are listed here. The format follows
 - In projects that use Migrax, the Migrax menu is now also in the right-click menu of the
   Project view and of the editor (for SQL, Java and Kotlin files). The plugin page now says
   where to find the actions.
+- When the Migrax command set in Settings > Tools > Migrax does not exist (a moved or
+  deleted folder), a notification offers to use the installed Migrax with one click, or to
+  clear the setting, after which it offers to download Migrax. Before, the setting had to be
+  cleared by hand.
 
 ### Changed
 - A migration file whose text did not change is not checked again for lint marks (for ten

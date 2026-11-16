@@ -86,7 +86,10 @@ is at [migrax.org/intellij](https://migrax.org/intellij/).
 - Migrate and Roll Back work on the database in the project's settings. Other environments
   are shown in the Environments tab but cannot be migrated from the IDE.
 - The plugin finds the command through the path in Settings > Tools > Migrax, then on `PATH`,
-  then the copy it downloaded itself.
+  then the copy it downloaded itself. When the path in the settings does not exist (a moved or
+  deleted folder), a notification offers to use the installed Migrax instead, or to clear the
+  setting, after which it offers to download one. It never switches without that click,
+  since another Migrax version could write different migrations.
 
 The plugin does not contain migration logic. It runs the `migrax` command line and shows its
 JSON output, so it behaves exactly like the terminal.

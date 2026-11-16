@@ -1,6 +1,7 @@
 package org.migrax.intellij;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -153,5 +154,33 @@ public class MigraxCliLocatorTest {
     Path migrax = launcher("Program Files", "migrax");
     String path = "\"" + migrax.getParent() + "\"";
     assertEquals(migrax, new MigraxCliLocator(false, path).locate("").orElseThrow());
+  }
+
+  @Test
+  public void aDeletedFolderInTheSettingIsGone() {
+    Path deleted = tmp.getRoot().toPath().resolve("scratch").resolve("migrax.cmd");
+    assertTrue(MigraxCliLocator.isGone(deleted.toString()));
+    assertTrue(MigraxCliLocator.isGone(" " + deleted + " "));
+  }
+
+  @Test
+  public void anExistingWrongPathIsNotGone() throws IOException {
+    // Wrong but there: a typo to correct, so the plugin keeps asking to correct it.
+    Path notMigrax = Files.createFile(tmp.getRoot().toPath().resolve("notes.txt"));
+    assertFalse(MigraxCliLocator.isGone(notMigrax.toString()));
+    assertFalse(MigraxCliLocator.isGone(tmp.getRoot().toString()));
+  }
+
+  @Test
+  public void aBlankSettingIsNotGone() {
+    assertFalse(MigraxCliLocator.isGone(""));
+    assertFalse(MigraxCliLocator.isGone("  "));
+    assertFalse(MigraxCliLocator.isGone(null));
+  }
+
+  @Test
+  public void notAPathIsATypoNotGone() {
+    // A NUL character is not allowed in a path on any system.
+    assertFalse(MigraxCliLocator.isGone("bad\0path"));
   }
 }

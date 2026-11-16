@@ -1,14 +1,22 @@
 package org.migrax.intellij;
 
+import com.intellij.notification.NotificationAction;
+import com.intellij.notification.NotificationGroupManager;
+import com.intellij.notification.NotificationType;
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.options.ShowSettingsUtil;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.Task;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** Starts the Migrax command for a project, for the tool window tabs and the actions. */
 final class MigraxCommands {
@@ -17,7 +25,84 @@ final class MigraxCommands {
       "The Migrax command was not found. Download it from the notification, or set the path of"
           + " an installed one in Settings > Tools > Migrax.";
 
+  // One notification at a time: the Status tab, the lint marks and the actions all run commands.
+  private static final AtomicBoolean CLEAR_OFFERED = new AtomicBoolean();
+
   private MigraxCommands() {}
+
+  /**
+   * The Status tab's text when the path in the settings does not exist (moved, deleted, or
+   * mistyped).
+   */
+  static String gone(String configured, boolean installedFound) {
+    return "The Migrax command set in Settings > Tools > Migrax does not exist: "
+        + configured
+        + (installedFound
+            ? ". Use the installed one from the notification, or clear the path in the settings."
+            : ". Clear the setting from the notification, or in the settings, and the plugin"
+                + " offers to download Migrax.");
+  }
+
+  /** The notification's text; HTML-escaped, since paths may hold {@code &} or {@code <}. */
+  static String goneNotification(String configured, @Nullable Path installed) {
+    return MigraxNotifications.html(
+        "The Migrax command set in the settings does not exist: "
+            + configured
+            + (installed != null
+                ? ". Migrax is installed at " + installed + "."
+                : ". No other Migrax was found on this computer: clear the setting and the"
+                    + " plugin offers to download one."));
+  }
+
+  /** Whether the setting still holds the path the notification was about. */
+  static boolean stillSetTo(String setting, String configured) {
+    return setting.trim().equals(configured);
+  }
+
+  /**
+   * Offers to clear a path that does not exist, so the installed Migrax (or a download) is
+   * used. Only on a click: the user may want that exact version back. Any thread.
+   */
+  private static void offerToClear(Project project, String configured, @Nullable Path installed) {
+    if (!CLEAR_OFFERED.compareAndSet(false, true)) {
+      return;
+    }
+    ApplicationManager.getApplication()
+        .invokeLater(
+            () ->
+                NotificationGroupManager.getInstance()
+                    .getNotificationGroup("Migrax")
+                    .createNotification(
+                        "Migrax", goneNotification(configured, installed), NotificationType.WARNING)
+                    .addAction(
+                        NotificationAction.createSimpleExpiring(
+                            installed != null ? "Use the Installed Migrax" : "Clear the Setting",
+                            () -> {
+                              MigraxSettings settings = MigraxSettings.getInstance();
+                              // Unless it was changed meanwhile in the settings.
+                              if (stillSetTo(settings.getCliPath(), configured)) {
+                                settings.setCliPath("");
+                              }
+                              // After clearing: a command meanwhile would offer this again.
+                              CLEAR_OFFERED.set(false);
+                              // The setting is the IDE's, so every open project uses it.
+                              for (Project open : ProjectManager.getInstance().getOpenProjects()) {
+                                MigraxToolWindowFactory.refreshStatus(open);
+                              }
+                            }))
+                    .addAction(
+                        NotificationAction.createSimpleExpiring(
+                            "Settings",
+                            () -> {
+                              CLEAR_OFFERED.set(false);
+                              ShowSettingsUtil.getInstance()
+                                  .showSettingsDialog(project, MigraxConfigurable.class);
+                            }))
+                    // Closed without an answer: offer again at the next command.
+                    .whenExpired(() -> CLEAR_OFFERED.set(false))
+                    .notify(project),
+            project.getDisposed());
+  }
 
   /** Runs the command with the default time limit; see the longer overload. */
   static void run(
@@ -91,6 +176,12 @@ final class MigraxCommands {
           if (configured == null || configured.isBlank()) {
             problem = NOT_FOUND;
             MigraxDownload.offer(project);
+          } else if (MigraxCliLocator.isGone(configured)) {
+            // Stale, e.g. a deleted folder: one click clears it, but never without asking,
+            // since another Migrax version could write different migrations.
+            Path installed = MigraxCliLocator.forThisMachine().locate("").orElse(null);
+            problem = gone(configured.trim(), installed != null);
+            offerToClear(project, configured.trim(), installed);
           } else {
             // A path set on purpose is not replaced by a download: the setting is wrong.
             problem =
