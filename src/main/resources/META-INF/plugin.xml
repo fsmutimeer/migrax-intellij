@@ -32,6 +32,9 @@
   ]]></description>
 
   <change-notes><![CDATA[
+    <p>0.2.0: a Migrax menu in the Project view and editor right-click menus; one click to use
+    the installed Migrax when the set path is gone; tabs and lint marks follow changed files with
+    fewer Migrax runs.</p>
     <p>0.1.1: keeps downloading Migrax, opening the report and opening generated files working
     on IntelliJ IDEA 2025.2 and later, including 2026.3.</p>
     <p>0.1.0: first release.</p>

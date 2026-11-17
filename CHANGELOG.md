@@ -4,7 +4,7 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the plugin uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2026-11-17
 
 ### Added
 - In projects that use Migrax, the Migrax menu is now also in the right-click menu of the
