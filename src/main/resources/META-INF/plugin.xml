@@ -6,7 +6,8 @@
   <description><![CDATA[
     <p>Generate, review, apply and roll back SQL database migrations from your JPA/Hibernate
     entities without leaving the editor, with <a href="https://migrax.org">Migrax</a>. Free, for
-    IntelliJ IDEA Community and Ultimate.</p>
+    IntelliJ IDEA Community and Ultimate. In PyCharm, WebStorm, GoLand, Rider and the other
+    JetBrains IDEs it applies, rolls back and lints hand-written SQL migrations.</p>
     <ul>
       <li><b>Generate Migration</b> writes the next migration from your entity changes, with a
       rollback script. It asks "Did you rename ...?" for a change that looks like a rename, and
@@ -42,7 +43,9 @@
   ]]></change-notes>
 
   <depends>com.intellij.modules.platform</depends>
-  <depends>com.intellij.modules.java</depends>
+  <!-- Optional, so the plugin also installs in PyCharm, WebStorm, GoLand, Rider and the other
+       IDEs: only the margin icon on entity classes needs Java (and Kotlin, which brings Java). -->
+  <depends optional="true" config-file="migrax-java.xml">com.intellij.modules.java</depends>
   <depends optional="true" config-file="migrax-kotlin.xml">org.jetbrains.kotlin</depends>
 
   <extensions defaultExtensionNs="com.intellij">
@@ -53,9 +56,6 @@
     <postStartupActivity implementation="org.migrax.intellij.MigraxStartupActivity"/>
     <statusBarWidgetFactory id="MigraxStatusBar"
                             implementation="org.migrax.intellij.MigraxStatusBarWidgetFactory"/>
-    <codeInsight.lineMarkerProvider
-        language="JAVA"
-        implementationClass="org.migrax.intellij.MigraxEntityLineMarkerProvider"/>
     <!-- Any language: SQL files are plain text without the Database plugin. -->
     <externalAnnotator
         language=""

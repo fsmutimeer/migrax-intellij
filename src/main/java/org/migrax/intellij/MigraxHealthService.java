@@ -49,6 +49,9 @@ public final class MigraxHealthService implements Disposable {
   // These are also used off the editor thread (findRoot runs in background tasks).
   private volatile boolean detected;
   private volatile Path root;
+  // Whether the project has a Maven or Gradle build, so entities for Migrax to read; true while
+  // not known. Read from disk with the root, on a background thread.
+  private volatile boolean jvmBuild = true;
 
   public MigraxHealthService(Project project) {
     this.project = project;
@@ -132,6 +135,15 @@ public final class MigraxHealthService implements Disposable {
     return detected && known != null ? known.toAbsolutePath().normalize() : null;
   }
 
+  /**
+   * False when the Migrax project has no Maven or Gradle build (hand-written SQL, as in a Python,
+   * Node.js or Go project): no entities for Generate, Plan, Drift and Verify. True while not
+   * known. Any thread.
+   */
+  boolean hasEntities() {
+    return jvmBuild;
+  }
+
   /** The latest health; any thread. */
   MigraxHealth health() {
     return health;
@@ -173,8 +185,10 @@ public final class MigraxHealthService implements Disposable {
             ? Optional.of(known)
             : MigraxProjectDetector.findRoot(folder);
     // Commands and the lint marks call this at the same time: one of them reports the change.
+    boolean build = found.map(MigraxProjectDetector::hasJvmBuild).orElse(true);
     synchronized (this) {
       root = found.orElse(null);
+      jvmBuild = build;
       if (found.isPresent() != detected) {
         detected = found.isPresent();
         ApplicationManager.getApplication()
@@ -258,7 +272,7 @@ public final class MigraxHealthService implements Disposable {
         result.cancelled() || result.timedOut()
             ? null
             : MigraxResult.parseJsonValue(result.stdout());
-    int changes = MigraxHealth.changesIn(json);
+    int changes = MigraxHealth.changesIn(json, jvmBuild);
     String note = changes >= 0 ? "" : orDefault(result.errorMessage(), "Check unavailable");
     // A check that did not answer keeps the icons of the last one that did.
     if (changes >= 0) {

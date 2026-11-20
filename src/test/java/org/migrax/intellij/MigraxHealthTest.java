@@ -50,6 +50,43 @@ public class MigraxHealthTest {
   }
 
   @Test
+  public void tellsAMissingEntityPackageFromOtherCheckErrors() {
+    // migrax check --json in a project without entities, 0.17.0 and 0.19.0 alike.
+    assertTrue(
+        MigraxHealth.noEntityPackage(
+            MigraxResult.parseJsonValue(
+                "{\"ok\":false,\"exitCode\":1,\"error\":{\"code\":\"MXE001\","
+                    + "\"message\":\"Entity package is unknown.\",\"hint\":\"Pass --package"
+                    + " <name> or set MIGRAX_PACKAGE.\"}}")));
+    assertFalse(
+        MigraxHealth.noEntityPackage(
+            MigraxResult.parseJsonValue(
+                "{\"ok\":false,\"error\":{\"code\":\"MXE001\",\"message\":\"Unknown option\"}}")));
+    assertFalse(MigraxHealth.noEntityPackage(MigraxResult.parseJsonValue("{\"changes\":[]}")));
+    assertFalse(MigraxHealth.noEntityPackage(null));
+  }
+
+  @Test
+  public void aMissingEntityPackageIsAProblemOnlyWithAJavaBuild() {
+    var noPackage =
+        MigraxResult.parseJsonValue(
+            "{\"ok\":false,\"error\":{\"code\":\"MXE001\","
+                + "\"message\":\"Entity package is unknown.\"}}");
+    // Hand-written SQL only: no entities, nothing to show.
+    assertEquals(0, MigraxHealth.changesIn(noPackage, false));
+    // A Maven or Gradle project without its package set: the error stays.
+    assertEquals(-1, MigraxHealth.changesIn(noPackage, true));
+    var other =
+        MigraxResult.parseJsonValue(
+            "{\"ok\":false,\"error\":{\"code\":\"MXE106\",\"message\":\"No driver\"}}");
+    assertEquals(-1, MigraxHealth.changesIn(other, false));
+    assertEquals(
+        2,
+        MigraxHealth.changesIn(
+            MigraxResult.parseJsonValue("{\"ok\":false,\"changes\":[{},{}]}"), false));
+  }
+
+  @Test
   public void allAppliedAndNoChangesIsInSync() {
     assertEquals("Migrax: in sync", MigraxHealth.of(status("applied,applied"), 0, "").label());
   }

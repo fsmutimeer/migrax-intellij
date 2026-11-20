@@ -8,7 +8,6 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
-import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.List;
@@ -26,8 +25,6 @@ final class MigraxInit {
   private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(10);
   private static final String TITLE = "Migrax: Set Up";
   private static final String NEXT_STEPS = "Next steps:";
-  private static final List<String> BUILD_FILES =
-      List.of("pom.xml", "build.gradle", "build.gradle.kts");
 
   private MigraxInit() {}
 
@@ -100,7 +97,7 @@ final class MigraxInit {
    */
   static String notes(Path picked, @Nullable Path base) {
     StringBuilder notes = new StringBuilder();
-    if (BUILD_FILES.stream().noneMatch(name -> Files.isRegularFile(picked.resolve(name)))) {
+    if (!MigraxProjectDetector.hasJvmBuild(picked)) {
       notes.append(
           "\n\nThe folder you picked has no pom.xml or build.gradle, so Migrax may have set up"
               + " the folder above it that has one: see the first line.");

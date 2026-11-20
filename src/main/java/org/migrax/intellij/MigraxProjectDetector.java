@@ -25,7 +25,9 @@ final class MigraxProjectDetector {
           "application.yaml",
           "microprofile-config.properties",
           "META-INF/microprofile-config.properties",
-          "META-INF/persistence.xml");
+          "META-INF/persistence.xml",
+          // The Jakarta EE integration's file; the command reads its own in the project folder.
+          "migrax.properties");
   /** A setting such as migrax.url=... or a "migrax:" section in a YAML file. */
   private static final Pattern SETTING = Pattern.compile("migrax[.:]");
   private static final long MAX_BYTES = 64 * 1024;
@@ -37,8 +39,20 @@ final class MigraxProjectDetector {
   private static final List<String> SKIPPED =
       List.of("node_modules", "target", "build", "out", "dist", "vendor");
   private static final int MAX_DEPTH = 3;
+  // The command's own project markers (ProjectContext in the main repository).
+  private static final List<String> JVM_BUILD_FILES =
+      List.of(
+          "pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts");
 
   private MigraxProjectDetector() {}
+
+  /**
+   * True when the folder has a Maven or Gradle build file. Without one (a Python, Node.js or Go
+   * project) Migrax has no entities to read: the migrations are written by hand.
+   */
+  static boolean hasJvmBuild(Path folder) {
+    return JVM_BUILD_FILES.stream().anyMatch(name -> Files.isRegularFile(folder.resolve(name)));
+  }
 
   /**
    * The Migrax project folder for an IDE project: the folder itself, or else the first one found
@@ -80,10 +94,20 @@ final class MigraxProjectDetector {
     return folderName.startsWith(".") || SKIPPED.contains(folderName);
   }
 
-  /** Two quick file checks: a {@code .migrax} folder or a {@code migrax.properties} file. */
+  /**
+   * Two quick file checks: a {@code .migrax} folder or a {@code migrax.properties} file. One in
+   * a resources folder (the Jakarta EE integration's) or build output marks no project.
+   */
   static boolean hasMarker(Path folder) {
     return Files.isDirectory(folder.resolve(".migrax"))
-        || Files.isRegularFile(folder.resolve("migrax.properties"));
+        || (Files.isRegularFile(folder.resolve("migrax.properties")) && !isResources(folder));
+  }
+
+  private static boolean isResources(Path folder) {
+    Path path = folder.toAbsolutePath().normalize();
+    return path.endsWith(Path.of("src", "main", "resources"))
+        || path.endsWith(Path.of("target", "classes"))
+        || path.endsWith(Path.of("build", "resources", "main"));
   }
 
   static boolean isMigraxProject(Path folder) {

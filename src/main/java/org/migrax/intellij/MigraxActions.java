@@ -145,6 +145,25 @@ public final class MigraxActions {
     abstract void perform(Project project);
   }
 
+  /** An action that compares entities: nothing to do without a Maven or Gradle build. */
+  abstract static class NeedsEntities extends Base {
+    static final String NO_ENTITIES =
+        "Needs entity classes (a Maven or Gradle project); this one has hand-written SQL only";
+
+    @Override
+    String nothingToDo(Project project, MigraxHealth health) {
+      return MigraxHealthService.getInstance(project).hasEntities()
+          ? whenEntities(project, health)
+          : NO_ENTITIES;
+    }
+
+    /** Why the action has nothing to do in a project with entities, or null. */
+    @Nullable
+    String whenEntities(Project project, MigraxHealth health) {
+      return null;
+    }
+  }
+
   public static final class Refresh extends Base {
     @Override
     void perform(Project project) {
@@ -152,9 +171,9 @@ public final class MigraxActions {
     }
   }
 
-  public static final class Generate extends Base {
+  public static final class Generate extends NeedsEntities {
     @Override
-    String nothingToDo(Project project, MigraxHealth health) {
+    String whenEntities(Project project, MigraxHealth health) {
       return health.nothingToGenerate();
     }
 
@@ -164,16 +183,16 @@ public final class MigraxActions {
     }
   }
 
-  public static final class GenerateZeroDowntime extends Base {
+  public static final class GenerateZeroDowntime extends NeedsEntities {
     @Override
     void perform(Project project) {
       MigraxGenerator.generate(project, MigraxGenerator.Mode.ZERO_DOWNTIME);
     }
   }
 
-  public static final class GenerateContract extends Base {
+  public static final class GenerateContract extends NeedsEntities {
     @Override
-    String nothingToDo(Project project, MigraxHealth health) {
+    String whenEntities(Project project, MigraxHealth health) {
       // A look into one folder, on the background thread actions update on.
       return MigraxGenerator.hasWaitingContract(
               MigraxHealthService.getInstance(project).knownRoot())
@@ -194,7 +213,7 @@ public final class MigraxActions {
     }
   }
 
-  public static final class Plan extends Base {
+  public static final class Plan extends NeedsEntities {
     @Override
     void perform(Project project) {
       MigraxToolWindowFactory.showPlan(project);
@@ -244,14 +263,14 @@ public final class MigraxActions {
     }
   }
 
-  public static final class Drift extends Base {
+  public static final class Drift extends NeedsEntities {
     @Override
     void perform(Project project) {
       MigraxDrift.run(project);
     }
   }
 
-  public static final class Verify extends Base {
+  public static final class Verify extends NeedsEntities {
     @Override
     void perform(Project project) {
       MigraxVerify.run(project);

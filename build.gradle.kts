@@ -60,6 +60,16 @@ intellijPlatform {
   }
 }
 
+// `./gradlew runPyCharm`: the plugin in an IDE without Java, the oldest PyCharm it supports.
+intellijPlatformTesting {
+  runIde {
+    register("runPyCharm") {
+      type = IntelliJPlatformType.PyCharmCommunity
+      version = "2024.2.6"
+    }
+  }
+}
+
 tasks.withType<JavaCompile> {
   options.encoding = "UTF-8"
   options.release = 17

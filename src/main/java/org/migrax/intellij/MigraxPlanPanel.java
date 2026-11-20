@@ -62,6 +62,14 @@ final class MigraxPlanPanel extends JPanel {
 
   /** Runs {@code migrax plan --json} in the background and shows the result. */
   void refresh() {
+    if (!MigraxHealthService.getInstance(project).hasEntities()) {
+      // plan compares entities; there are none to read.
+      ran = true;
+      showError(
+          "The plan is the SQL of the entity changes. This project has hand-written SQL"
+              + " migrations only: the Status tab shows them.");
+      return;
+    }
     loading = true;
     summary.setText("Planning...");
     // Not marked as run when the command could not start, so the tab tries again once the

@@ -1,0 +1,8 @@
+<!-- Loaded only when the IDE has Java support (IntelliJ IDEA, Android Studio). -->
+<idea-plugin>
+  <extensions defaultExtensionNs="com.intellij">
+    <codeInsight.lineMarkerProvider
+        language="JAVA"
+        implementationClass="org.migrax.intellij.MigraxEntityLineMarkerProvider"/>
+  </extensions>
+</idea-plugin>

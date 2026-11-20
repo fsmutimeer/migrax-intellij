@@ -185,6 +185,23 @@ final class MigraxHealth {
     return List.of(states).contains(row.state());
   }
 
+  /**
+   * Counts the changes of {@code migrax check --json} as {@link #changesIn(JsonElement)}; in a
+   * project without a Maven or Gradle build the missing entity package means no entities (the
+   * migrations are written by hand), so 0 changes rather than a problem to show.
+   */
+  static int changesIn(@Nullable JsonElement json, boolean jvmBuild) {
+    int changes = changesIn(json);
+    return changes < 0 && !jvmBuild && noEntityPackage(json) ? 0 : changes;
+  }
+
+  /** True when {@code migrax check --json} failed because no entity package is set. */
+  static boolean noEntityPackage(@Nullable JsonElement json) {
+    return json instanceof JsonObject object
+        && object.get("error") instanceof JsonObject error
+        && MigraxResult.NO_PACKAGE.equals(MigraxResult.string(error, "message"));
+  }
+
   /** Counts the changes of {@code migrax check --json}; -1 when the output is not that. */
   static int changesIn(@Nullable JsonElement json) {
     if (json instanceof JsonObject object && object.get("changes") instanceof JsonArray list) {

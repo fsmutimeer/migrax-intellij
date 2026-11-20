@@ -53,6 +53,13 @@ jobs:
           - IntellijIdea:2025.3.6.1
           - IntellijIdea:2026.1.5
           - IntellijIdea:2026.2.3
+          # IDEs without Java (the plugin needs Java only for the entity margin icon): the oldest
+          # supported PyCharm, and the newest of each IDE as of 2026-11-20.
+          - PyCharmCommunity:2024.2.6
+          - PyCharm:2026.3.0.1
+          - WebStorm:2026.3
+          - GoLand:2026.3
+          - Rider:2026.3.0.1
     steps:
       # One IDE is still a few GB unpacked: free the runner's disk first.
       - run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android

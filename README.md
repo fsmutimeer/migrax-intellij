@@ -114,8 +114,14 @@ On Windows in `cmd` or PowerShell, use `gradlew.bat` instead of `./gradlew`.
 
 ## Compatibility
 
-IntelliJ IDEA 2024.2 and newer (Community and Ultimate). Other JetBrains IDEs are not
-supported yet.
+IntelliJ IDEA 2024.2 and newer (Community and Ultimate), and the other JetBrains IDEs from
+2024.2 on, such as PyCharm, WebStorm, GoLand and Rider. Those have no Java support, so the
+icon next to entity classes is missing there. In a project without a Maven or Gradle build
+(hand-written SQL migrations, as in a Python, Node.js or Go service) status, lint marks,
+Migrate, Roll Back, Repair, Report and Doctor work; Generate, Plan, Drift and Verify compare
+entity classes and are greyed out. The plugin finds a Migrax project by a `.migrax` folder, a
+`migrax.properties` file, or `migrax.` keys in `src/main/resources/application.*`; it does
+not see settings that exist only as environment variables in a terminal.
 
 The plugin runs the Migrax command line, version 0.17 or newer, which needs Java 17 or newer.
 An installed Migrax (on `PATH`, or its path in Settings > Tools > Migrax) is used first. Without

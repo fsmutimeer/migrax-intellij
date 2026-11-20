@@ -16,6 +16,16 @@ All notable changes to this plugin are listed here. The format follows
   `-- migrax:lint-ignore-file`, and on MX012 "Add '-- migrax:no-transaction' to this migration"
   comes first. The marks update after the edit. Not offered on a migration the database has
   already run, because editing it changes its checksum.
+- The plugin installs in PyCharm, WebStorm, GoLand, Rider and the other JetBrains IDEs, not
+  only IntelliJ IDEA. There it works with hand-written SQL migrations: status, lint marks,
+  Migrate, Roll Back, Repair, Report and Doctor. Generate, Plan, Drift and Verify compare
+  entity classes, so they are greyed out in a project without a Maven or Gradle build. The
+  icon next to entity classes needs an IDE with Java, such as IntelliJ IDEA.
+
+### Fixed
+- In a project without a `pom.xml` or `build.gradle` (hand-written SQL migrations, no
+  entities), the status bar said "Migrax: unavailable" and pointed to `application.properties`.
+  It now shows the migrations' state, with no entity changes.
 
 ## [0.2.0] - 2026-11-17
 

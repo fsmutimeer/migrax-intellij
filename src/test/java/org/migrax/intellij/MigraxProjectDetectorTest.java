@@ -1,11 +1,13 @@
 package org.migrax.intellij;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -24,6 +26,24 @@ public class MigraxProjectDetectorTest {
   @Test
   public void anEmptyFolderIsNotAMigraxProject() {
     assertFalse(MigraxProjectDetector.isMigraxProject(tmp.getRoot().toPath()));
+  }
+
+  @Test
+  public void aMavenOrGradleBuildMakesItAJvmProject() throws IOException {
+    Path folder = write("migrax.properties", "migrax.url=jdbc:sqlite:app.db\n");
+    // Hand-written SQL only, as in a Python, Node.js or Go project.
+    assertFalse(MigraxProjectDetector.hasJvmBuild(folder));
+    write("build.gradle.kts", "");
+    assertTrue(MigraxProjectDetector.hasJvmBuild(folder));
+  }
+
+  @Test
+  public void theJakartaFileInResourcesMarksTheProjectFolderNotTheResources() throws IOException {
+    Path root = write("src/main/resources/migrax.properties", "migrax.locations=db/migration\n");
+    write("pom.xml", "<project/>");
+    assertTrue(MigraxProjectDetector.isMigraxProject(root));
+    assertFalse(MigraxProjectDetector.hasMarker(root.resolve("src/main/resources")));
+    assertEquals(Optional.of(root), MigraxProjectDetector.findRoot(root));
   }
 
   @Test
