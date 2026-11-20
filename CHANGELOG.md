@@ -34,6 +34,14 @@ All notable changes to this plugin are listed here. The format follows
   entities), the status bar said "Migrax: unavailable" and pointed to `application.properties`.
   It now shows the migrations' state, with no entity changes.
 
+### Security
+- Migrax runs nothing in a project the IDE does not trust: no status check when it opens, no
+  lint marks, no actions. A project's settings files (`migrax.properties`,
+  `application.properties`) can fill the database URL with your environment variables and
+  point it at another server, so a cloned repository must not make Migrax connect anywhere
+  just by being opened. The status bar says "Migrax: not trusted" and the actions are greyed
+  out; trust the project (the Safe Mode banner), then click Refresh in the Migrax tool window.
+
 ## [0.2.0] - 2026-11-17
 
 ### Added

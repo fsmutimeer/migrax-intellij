@@ -71,6 +71,15 @@ is at [migrax.org/intellij](https://migrax.org/intellij/).
   - *Doctor* checks the settings, the project and the database.
   - *Refresh* (tool window only) loads the open tab again.
 
+## Untrusted projects
+
+In a project the IDE does not trust (opened in Safe Mode), the plugin runs nothing: no status
+check, no lint marks, no actions. A project's settings files can fill the database URL with
+your environment variables and point it at another server, so opening a cloned repository
+must not make Migrax connect anywhere. The status bar says "Migrax: not trusted" and the
+actions are greyed out. Trust the project with the Safe Mode banner, then click Refresh in the
+Migrax tool window.
+
 ## Planned
 
 - Squash in the menu, and a run configuration for Migrate.

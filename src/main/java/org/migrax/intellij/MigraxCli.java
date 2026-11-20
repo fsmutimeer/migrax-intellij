@@ -18,6 +18,9 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Runs the Migrax command in a folder, one call at a time.
  *
+ * <p>Every new way to start it must check {@link MigraxTrust} first: the command reads the
+ * project's settings files, which an untrusted project can't be allowed to direct.
+ *
  * <p>Never call {@link #run} on the editor thread: it waits for the process. Use {@link
  * MigraxCommands} from the UI. Cancelling the progress stops the process and its children.
  * Passwords never go on the command line: the command reads them from its own settings and

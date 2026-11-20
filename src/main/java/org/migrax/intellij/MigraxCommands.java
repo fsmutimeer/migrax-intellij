@@ -158,6 +158,12 @@ final class MigraxCommands {
       boolean cancellable,
       Consumer<List<MigraxResult>> onResults,
       Consumer<String> onProblem) {
+    if (!MigraxTrust.isTrusted(project)) {
+      // Later, as a run would answer: callers expect it after they set up their state.
+      ApplicationManager.getApplication()
+          .invokeLater(() -> onProblem.accept(MigraxTrust.UNTRUSTED), project.getDisposed());
+      return;
+    }
     new Task.Backgroundable(project, title, cancellable) {
       private final List<MigraxResult> results = new ArrayList<>();
       private String problem;

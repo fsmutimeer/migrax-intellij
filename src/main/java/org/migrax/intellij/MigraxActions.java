@@ -90,7 +90,13 @@ public final class MigraxActions {
 
     @Override
     public void update(@NotNull AnActionEvent e) {
-      e.getPresentation().setEnabledAndVisible(e.getProject() != null && !usesMigrax(e));
+      Project project = e.getProject();
+      e.getPresentation().setEnabledAndVisible(project != null && !usesMigrax(e));
+      if (project != null && !MigraxTrust.isTrusted(project)) {
+        // Before the folder chooser: it would ask, and then not run.
+        e.getPresentation().setEnabled(false);
+        e.getPresentation().setDescription(MigraxTrust.UNTRUSTED);
+      }
     }
 
     @Override
@@ -121,7 +127,11 @@ public final class MigraxActions {
         return;
       }
       Project project = e.getProject();
-      String reason = nothingToDo(project, MigraxHealthService.getInstance(project).health());
+      // Refresh stays on: it is how the tabs come back once the project is trusted.
+      String reason =
+          !(this instanceof Refresh) && !MigraxTrust.isTrusted(project)
+              ? MigraxTrust.UNTRUSTED
+              : nothingToDo(project, MigraxHealthService.getInstance(project).health());
       presentation.setVisible(true);
       presentation.setEnabled(reason == null);
       presentation.setDescription(

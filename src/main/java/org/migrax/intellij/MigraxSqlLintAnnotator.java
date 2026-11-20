@@ -98,6 +98,9 @@ public final class MigraxSqlLintAnnotator
 
   @Override
   public @Nullable List<Mark> doAnnotate(Input input) {
+    if (!MigraxTrust.isTrusted(input.project())) {
+      return null;
+    }
     MigraxHealthService health = MigraxHealthService.getInstance(input.project());
     // Checked first: without a Migrax project findRoot searches the folders on every call. The
     // startup activity runs the first search.

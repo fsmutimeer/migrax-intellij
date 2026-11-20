@@ -72,6 +72,9 @@ final class MigraxHealth {
     if (!parts.isEmpty()) {
       return "Migrax: " + String.join(", ", parts);
     }
+    if (note.equals(MigraxTrust.UNTRUSTED)) {
+      return "Migrax: not trusted";
+    }
     return note.isEmpty() ? "Migrax: in sync" : "Migrax: unavailable";
   }
 
