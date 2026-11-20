@@ -34,6 +34,10 @@
   ]]></description>
 
   <change-notes><![CDATA[
+    <p>0.3.0: installs in PyCharm, WebStorm, GoLand, Rider and the other JetBrains IDEs; a
+    database per project in Settings &gt; Tools &gt; Migrax &gt; This Project; Alt+Enter on lint
+    marks ignores a finding or adds no-transaction; Roll Back lists data it can't bring back;
+    Migrax runs nothing in a project the IDE does not trust.</p>
     <p>0.2.0: a Migrax menu in the Project view and editor right-click menus; one click to use
     the installed Migrax when the set path is gone; tabs and lint marks follow changed files with
     fewer Migrax runs.</p>

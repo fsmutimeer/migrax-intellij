@@ -4,7 +4,7 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the plugin uses
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.3.0] - 2026-11-20
 
 ### Added
 - Roll Back's confirmation now lists the tables and columns that the rollback brings back
