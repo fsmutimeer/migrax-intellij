@@ -193,7 +193,12 @@ final class MigraxCommands {
         }
         // Only for the plugin's own download, once per IDE session.
         MigraxDownload.checkForUpdate(project, launcher.get());
-        MigraxCli cli = new MigraxCli(launcher.get(), folder.get(), timeoutMillis);
+        MigraxCli cli =
+            new MigraxCli(
+                launcher.get(),
+                folder.get(),
+                timeoutMillis,
+                MigraxProjectSettings.getInstance(project).environment());
         for (List<String> args : runs) {
           MigraxResult result = cli.run(args, indicator, cancellable);
           results.add(result);

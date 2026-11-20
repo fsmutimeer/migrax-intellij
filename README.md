@@ -120,8 +120,18 @@ icon next to entity classes is missing there. In a project without a Maven or Gr
 (hand-written SQL migrations, as in a Python, Node.js or Go service) status, lint marks,
 Migrate, Roll Back, Repair, Report and Doctor work; Generate, Plan, Drift and Verify compare
 entity classes and are greyed out. The plugin finds a Migrax project by a `.migrax` folder, a
-`migrax.properties` file, or `migrax.` keys in `src/main/resources/application.*`; it does
-not see settings that exist only as environment variables in a terminal.
+`migrax.properties` file, `migrax.` keys in `src/main/resources/application.*`, or a database
+set in **Settings > Tools > Migrax > This Project**.
+
+That page is for a project whose settings Migrax can't read from a file, or to use another
+database in the IDE: the database URL, user, password and migrations folder. They are kept
+for you only (the IDE's workspace file, normally not committed; the password in the IDE's
+password store) and given to the command as `MIGRAX_DATABASE_URL`, `MIGRAX_DATABASE_USER`,
+`MIGRAX_DATABASE_PASSWORD` and `MIGRAX_LOCATIONS`, so they win over the project's files and
+work with every Migrax version. A user or password left empty there comes from the project's
+files. The commands also get the IDE's own environment variables, but the plugin doesn't find
+a project by them: put the settings in `migrax.properties` (read by Migrax versions after
+0.19.0) or on this page.
 
 The plugin runs the Migrax command line, version 0.17 or newer, which needs Java 17 or newer.
 An installed Migrax (on `PATH`, or its path in Settings > Tools > Migrax) is used first. Without

@@ -130,7 +130,11 @@ public final class MigraxSqlLintAnnotator
       copy = Files.createTempFile("migrax-lint-", ".sql");
       Files.writeString(copy, input.text(), StandardCharsets.UTF_8);
       MigraxResult result =
-          new MigraxCli(launcher.get(), root.get(), TIMEOUT_MILLIS)
+          new MigraxCli(
+                  launcher.get(),
+                  root.get(),
+                  TIMEOUT_MILLIS,
+                  MigraxProjectSettings.getInstance(input.project()).environment())
               .run(
                   List.of("lint", copy.toString(), "--json"),
                   ProgressManager.getInstance().getProgressIndicator());

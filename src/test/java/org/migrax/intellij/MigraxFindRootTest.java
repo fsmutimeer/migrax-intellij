@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -53,5 +54,23 @@ public class MigraxFindRootTest {
   public void tooDeepIsNotSearched() throws IOException {
     migraxFolder("a/b/c/d");
     assertTrue(MigraxProjectDetector.findRoot(tmp.getRoot().toPath()).isEmpty());
+  }
+
+  @Test
+  public void aDatabaseSetInTheIdeMakesTheProjectFolderTheRoot() {
+    Path folder = tmp.getRoot().toPath();
+    // No Migrax files at all: only the URL in Settings > Tools > Migrax > This Project.
+    assertEquals(Optional.of(folder), MigraxHealthService.chooseRoot(null, folder, true));
+    assertEquals(Optional.of(folder), MigraxHealthService.chooseRoot(folder, folder, true));
+    // The URL cleared again: no Migrax project.
+    assertEquals(Optional.empty(), MigraxHealthService.chooseRoot(folder, folder, false));
+  }
+
+  @Test
+  public void aMigraxProjectBelowWinsOverTheUrl() throws IOException {
+    Path module = migraxFolder("backend/orders");
+    Path folder = tmp.getRoot().toPath();
+    assertEquals(Optional.of(module), MigraxHealthService.chooseRoot(null, folder, true));
+    assertEquals(Optional.of(module), MigraxHealthService.chooseRoot(module, folder, false));
   }
 }

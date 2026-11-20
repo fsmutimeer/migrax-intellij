@@ -22,7 +22,8 @@ import org.jetbrains.annotations.Nullable;
  * MigraxCommands} from the UI. Cancelling the progress stops the process and its children.
  * Passwords never go on the command line: the command reads them from its own settings and
  * environment variables, which the process inherits (the environment a shell would give it,
- * so an IDE started from the dock sees the same variables as a terminal).
+ * so an IDE started from the dock sees the same variables as a terminal), plus the project's
+ * database from Settings > Tools > Migrax > This Project, passed as environment variables.
  *
  * <p>One call at a time per working folder, across all objects: two runs in the same project
  * would fight over the migration lock. The wait is not reentrant, so a nested call from the
@@ -42,12 +43,18 @@ final class MigraxCli {
   private final Path workDir;
   private final long timeoutMillis;
   private final Semaphore oneAtATime;
+  private final Map<String, String> environment;
 
   MigraxCli(Path launcher, Path workDir) {
     this(launcher, workDir, DEFAULT_TIMEOUT_MILLIS);
   }
 
   MigraxCli(Path launcher, Path workDir, long timeoutMillis) {
+    this(launcher, workDir, timeoutMillis, Map.of());
+  }
+
+  /** @param environment variables for the command on top of the IDE's own, such as the URL */
+  MigraxCli(Path launcher, Path workDir, long timeoutMillis, Map<String, String> environment) {
     if (timeoutMillis <= 0 || timeoutMillis > Integer.MAX_VALUE) {
       throw new IllegalArgumentException("Timeout out of range: " + timeoutMillis);
     }
@@ -56,6 +63,7 @@ final class MigraxCli {
     this.oneAtATime =
         TURNS.computeIfAbsent(workDir.toAbsolutePath().normalize(), key -> new Semaphore(1));
     this.timeoutMillis = timeoutMillis;
+    this.environment = Map.copyOf(environment);
   }
 
   /**
@@ -106,6 +114,7 @@ final class MigraxCli {
             .withParameters(args)
             .withWorkDirectory(workDir.toFile())
             .withParentEnvironmentType(GeneralCommandLine.ParentEnvironmentType.CONSOLE)
+            .withEnvironment(environment)
             .withCharset(StandardCharsets.UTF_8);
     try {
       // The launcher starts a JVM behind a script: stop the whole tree, not just the script.

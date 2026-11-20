@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -54,6 +55,26 @@ public class MigraxCliTest {
     assertNotNull(result.json());
     assertEquals(1, result.json().getAsJsonArray("changes").size());
     assertNull(result.errorMessage());
+  }
+
+  @Test
+  public void passesTheProjectsDatabaseAsEnvironmentVariables() throws IOException {
+    // A variable the IDE has too (always set on these systems): the project's value wins.
+    String inherited = WINDOWS ? "USERNAME" : "HOME";
+    assertNotNull(System.getenv(inherited));
+    Path migrax =
+        launcher(
+            WINDOWS
+                ? "echo %MIGRAX_DATABASE_URL% %" + inherited + "%"
+                : "echo \"$MIGRAX_DATABASE_URL $" + inherited + "\"");
+    MigraxResult result =
+        new MigraxCli(
+                migrax,
+                workDir,
+                MigraxCli.DEFAULT_TIMEOUT_MILLIS,
+                Map.of("MIGRAX_DATABASE_URL", "jdbc:sqlite:shop.db", inherited, "from-project"))
+            .run(List.of("status"), null);
+    assertEquals("jdbc:sqlite:shop.db from-project", result.stdout().trim());
   }
 
   @Test

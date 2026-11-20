@@ -177,13 +177,8 @@ public final class MigraxHealthService implements Disposable {
     } catch (InvalidPathException e) {
       return Optional.empty();
     }
-    // The folder found earlier is used again while it is still a Migrax project: searching the
-    // tree for every command would be slow in a big repository.
-    Path known = root;
     Optional<Path> found =
-        known != null && MigraxProjectDetector.isMigraxProject(known)
-            ? Optional.of(known)
-            : MigraxProjectDetector.findRoot(folder);
+        chooseRoot(root, folder, MigraxProjectSettings.getInstance(project).hasUrl());
     // Commands and the lint marks call this at the same time: one of them reports the change.
     boolean build = found.map(MigraxProjectDetector::hasJvmBuild).orElse(true);
     synchronized (this) {
@@ -196,6 +191,21 @@ public final class MigraxHealthService implements Disposable {
       }
     }
     return Optional.of(found.orElse(folder));
+  }
+
+  /**
+   * The Migrax project folder below the IDE project's {@code folder}. The one found earlier
+   * ({@code known}) is used again while it still is one: searching the tree for every command
+   * would be slow in a big repository. With a database set in Settings > Tools > Migrax > This
+   * Project ({@code urlSet}) and no Migrax project found, the IDE project's folder is it.
+   */
+  static Optional<Path> chooseRoot(@Nullable Path known, Path folder, boolean urlSet) {
+    if (known != null
+        && (MigraxProjectDetector.isMigraxProject(known) || (urlSet && known.equals(folder)))) {
+      return Optional.of(known);
+    }
+    Optional<Path> found = MigraxProjectDetector.findRoot(folder);
+    return found.isEmpty() && urlSet ? Optional.of(folder) : found;
   }
 
   /** Editor thread. Reads {@link #detected} again: it may have changed back meanwhile. */

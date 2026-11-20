@@ -38,6 +38,9 @@ public final class MigraxStatusBarWidgetFactory implements StatusBarWidgetFactor
     if (MigraxHealthService.getInstance(project).isDetected()) {
       return true;
     }
+    if (MigraxProjectSettings.getInstance(project).hasUrl()) {
+      return true;
+    }
     String base = project.getBasePath();
     return base != null && MigraxProjectDetector.hasMarker(Path.of(base));
   }

@@ -21,6 +21,13 @@ All notable changes to this plugin are listed here. The format follows
   Migrate, Roll Back, Repair, Report and Doctor. Generate, Plan, Drift and Verify compare
   entity classes, so they are greyed out in a project without a Maven or Gradle build. The
   icon next to entity classes needs an IDE with Java, such as IntelliJ IDEA.
+- Settings > Tools > Migrax > This Project: the database URL, user, password and migrations
+  folder for this project, for one whose settings Migrax can't read from a file (such as a
+  Python project configured by environment variables) or to use another database in the IDE.
+  Kept out of the project (the workspace file, normally not committed; the password in the
+  IDE's password store) and given to every Migrax command, so they win over the project's
+  files. A user or password left empty there comes from the project's files. A database set there
+  is enough for the plugin to treat the project as a Migrax project.
 
 ### Fixed
 - In a project without a `pom.xml` or `build.gradle` (hand-written SQL migrations, no

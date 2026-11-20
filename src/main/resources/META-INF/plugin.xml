@@ -53,6 +53,11 @@
                              id="org.migrax.ide.settings"
                              displayName="Migrax"
                              instance="org.migrax.intellij.MigraxConfigurable"/>
+    <projectConfigurable parentId="org.migrax.ide.settings"
+                         id="org.migrax.ide.settings.project"
+                         nonDefaultProject="true"
+                         displayName="This Project"
+                         instance="org.migrax.intellij.MigraxProjectConfigurable"/>
     <postStartupActivity implementation="org.migrax.intellij.MigraxStartupActivity"/>
     <statusBarWidgetFactory id="MigraxStatusBar"
                             implementation="org.migrax.intellij.MigraxStatusBarWidgetFactory"/>
