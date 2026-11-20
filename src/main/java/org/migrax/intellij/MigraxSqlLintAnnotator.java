@@ -171,6 +171,12 @@ public final class MigraxSqlLintAnnotator
     // A finding without a place (an unclosed quote while typing, a repeated batch) can come
     // several times: show it once above the file.
     Set<String> aboveTheFile = new HashSet<>();
+    // Editing a migration the database has run changes its checksum, and Migrax then refuses to
+    // migrate: no fixes that write into it.
+    boolean editable =
+        !MigraxHealthService.getInstance(file.getProject())
+            .health()
+            .isRecorded(file.getName());
     for (Mark mark : marks) {
       MigraxFinding finding = mark.finding();
       TextRange range = mark.range();
@@ -187,6 +193,13 @@ public final class MigraxSqlLintAnnotator
       } else {
         // The statement was not found: show the finding above the file instead.
         builder = builder.fileLevel();
+      }
+      if (editable) {
+        for (MigraxLintFix fix :
+            MigraxLintFix.forFinding(
+                finding.code(), placed ? range.getStartOffset() : -1, finding.sql())) {
+          builder = builder.withFix(fix);
+        }
       }
       builder.create();
     }

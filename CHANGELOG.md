@@ -11,6 +11,11 @@ All notable changes to this plugin are listed here. The format follows
   without their data, such as a column dropped by a migration made without "Keep a backup of
   the dropped data". Needs Migrax 0.19.0 or later; with older versions the dialog is as
   before.
+- Alt+Enter on a lint mark in a migration file: "Ignore MX007 for this statement" writes
+  `-- migrax:lint-ignore MX007` above it, "Ignore MX007 in this file" writes (or adds to)
+  `-- migrax:lint-ignore-file`, and on MX012 "Add '-- migrax:no-transaction' to this migration"
+  comes first. The marks update after the edit. Not offered on a migration the database has
+  already run, because editing it changes its checksum.
 
 ## [0.2.0] - 2026-11-17
 

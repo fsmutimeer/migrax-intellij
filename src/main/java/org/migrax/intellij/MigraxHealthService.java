@@ -280,9 +280,16 @@ public final class MigraxHealthService implements Disposable {
     done(MigraxHealth.unavailable(reason));
   }
 
-  private void done(MigraxHealth latest) {
+  private void done(MigraxHealth answer) {
     running = false;
+    MigraxHealth latest = answer.keepingRecordsOf(health);
+    boolean recordsChanged = !latest.sameRecords(health);
     health = latest;
+    if (recordsChanged && !project.isDisposed()) {
+      // The lint marks offer edits only on migrations the database has not run: show them again
+      // (from the stored lint results while they are fresh).
+      DaemonCodeAnalyzer.getInstance(project).restart();
+    }
     listeners.forEach(Runnable::run);
     // The actions grey out by the latest health: update the toolbar now, not at the next click.
     ActivityTracker.getInstance().inc();

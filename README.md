@@ -25,7 +25,13 @@ is at [migrax.org/intellij](https://migrax.org/intellij/).
   entities read with Hibernate 5 or newer or by annotation scanning.
 - Lint findings inside migration files: a risky statement is underlined (red for errors) and
   its tooltip gives the rule, the message and the fix. The text in the editor is checked, also
-  before you save it, with `migrax lint`.
+  before you save it, with `migrax lint`. Alt+Enter on a finding offers to ignore it for that
+  statement (`-- migrax:lint-ignore MX007` above it) or the whole file
+  (`-- migrax:lint-ignore-file`), and for MX012 to add `-- migrax:no-transaction`. These are
+  not offered on a migration the database has already run (editing it changes its checksum);
+  a migration another database has run is not known to the plugin, so take care there. Until
+  the first status check after the IDE starts (or when it never succeeds, for example without
+  a database connection) they are offered on every migration.
 
 - Buttons down the left side of the Migrax tool window, and the same actions in a
   **Tools > Migrax** menu. In a Migrax project the Migrax menu is also in the right-click menu

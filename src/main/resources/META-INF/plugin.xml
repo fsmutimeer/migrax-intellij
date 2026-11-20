@@ -16,7 +16,8 @@
       <li>A <b>Migrax tool window</b> with the state of every migration, the SQL of the next
       one, lint findings and every configured database.</li>
       <li>An <b>icon next to entity classes</b> (Java and Kotlin) whose changes are not in a
-      migration yet, and <b>locking and risky SQL underlined</b> in migration files.</li>
+      migration yet, and <b>locking and risky SQL underlined</b> in migration files, with
+      Alt+Enter to ignore a finding or add the directive it needs.</li>
       <li><b>Drift</b>, <b>Verify</b> on a throwaway database, an HTML <b>Report</b>,
       zero-downtime changes, <b>Doctor</b> and <b>Set Up Migrax</b> for a new project.</li>
     </ul>

@@ -5,6 +5,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -22,13 +25,15 @@ final class MigraxHealth {
   private final boolean nothingBroken;
   private final int changes;
   private final String note;
+  // File names of migrations the database has a record of; null when not known.
+  private final @Nullable Set<String> recorded;
 
   /**
    * @param changes entity changes not in a migration; -1 when that could not be checked
    * @param note why something could not be checked, or empty
    */
   MigraxHealth(int problems, int pending, int changes, String note) {
-    this(problems, pending, false, false, false, false, changes, note);
+    this(problems, pending, false, false, false, false, changes, note, null);
   }
 
   private MigraxHealth(
@@ -39,7 +44,8 @@ final class MigraxHealth {
       boolean nothingApplied,
       boolean nothingBroken,
       int changes,
-      String note) {
+      String note,
+      @Nullable Set<String> recorded) {
     this.problems = problems;
     this.pending = pending;
     this.hasMigrations = hasMigrations;
@@ -48,6 +54,7 @@ final class MigraxHealth {
     this.nothingBroken = nothingBroken;
     this.changes = changes;
     this.note = note;
+    this.recorded = recorded;
   }
 
   /** The text of the status bar widget, such as "Migrax: 2 pending, 1 change". */
@@ -101,6 +108,38 @@ final class MigraxHealth {
   }
 
   /**
+   * True when the database has a record of a migration file with this name (applied, failed,
+   * changed...) at the last check: editing it changes its checksum. False when not known.
+   */
+  boolean isRecorded(String fileName) {
+    return recorded != null && recorded.contains(fileName);
+  }
+
+  /** True when both know the same migrations the database has a record of. */
+  boolean sameRecords(MigraxHealth other) {
+    return Objects.equals(recorded, other.recorded);
+  }
+
+  /**
+   * This health, with the migrations {@code previous} knows the database has run when this one
+   * does not know them (the status could not be read): a failed refresh keeps them.
+   */
+  MigraxHealth keepingRecordsOf(MigraxHealth previous) {
+    return recorded != null || previous.recorded == null
+        ? this
+        : new MigraxHealth(
+            problems,
+            pending,
+            hasMigrations,
+            nothingToApply,
+            nothingApplied,
+            nothingBroken,
+            changes,
+            note,
+            previous.recorded);
+  }
+
+  /**
    * Why Generate has nothing to do, or null when it may have. Without any migration it stays on:
    * the first run writes the baseline of an existing database.
    */
@@ -134,7 +173,12 @@ final class MigraxHealth {
         nothingApplied,
         nothingBroken,
         changes,
-        note);
+        note,
+        // Every state but these is in the history, also one this plugin does not know.
+        status.rows().stream()
+            .filter(r -> !is(r, "pending", "skipped"))
+            .map(MigraxStatus.Row::version)
+            .collect(Collectors.toUnmodifiableSet()));
   }
 
   private static boolean is(MigraxStatus.Row row, String... states) {

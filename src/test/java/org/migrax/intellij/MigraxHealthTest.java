@@ -1,6 +1,7 @@
 package org.migrax.intellij;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -18,6 +19,34 @@ public class MigraxHealthTest {
       rows.append("{\"version\":\"v\",\"state\":\"").append(state).append("\"}");
     }
     return MigraxStatus.from(MigraxResult.parseJsonValue("{\"migrations\":[" + rows + "]}"));
+  }
+
+  @Test
+  public void knowsWhichMigrationsTheDatabaseHasRecorded() {
+    String json =
+        "{\"migrations\":[{\"version\":\"V1__a.sql\",\"state\":\"applied\"},"
+            + "{\"version\":\"V2__b.sql\",\"state\":\"failed\"},"
+            + "{\"version\":\"V3__c.sql\",\"state\":\"some-new-state\"},"
+            + "{\"version\":\"V4__d.sql\",\"state\":\"pending\"},"
+            + "{\"version\":\"V5__e.sql\",\"state\":\"skipped\"}]}";
+    MigraxHealth health =
+        MigraxHealth.of(MigraxStatus.from(MigraxResult.parseJsonValue(json)), 0, "");
+    assertTrue(health.isRecorded("V1__a.sql"));
+    assertTrue(health.isRecorded("V2__b.sql"));
+    // A state this plugin does not know counts as recorded: no edits offered.
+    assertTrue(health.isRecorded("V3__c.sql"));
+    assertFalse(health.isRecorded("V4__d.sql"));
+    assertFalse(health.isRecorded("V5__e.sql"));
+    assertFalse(MigraxHealth.unavailable("down").isRecorded("V1__a.sql"));
+    assertFalse(health.sameRecords(MigraxHealth.unavailable("down")));
+    assertFalse(
+        MigraxHealth.unavailable("x").sameRecords(MigraxHealth.of(status("pending"), 0, "")));
+    // A failed refresh keeps what the last good one knew; a good one replaces it.
+    MigraxHealth failed = MigraxHealth.unavailable("down").keepingRecordsOf(health);
+    assertTrue(failed.isRecorded("V1__a.sql"));
+    assertTrue(failed.sameRecords(health));
+    MigraxHealth fresh = MigraxHealth.of(status("pending"), 0, "").keepingRecordsOf(health);
+    assertFalse(fresh.isRecorded("V1__a.sql"));
   }
 
   @Test
