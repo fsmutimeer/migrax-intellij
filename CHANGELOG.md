@@ -4,6 +4,14 @@ All notable changes to this plugin are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the plugin uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- Roll Back's confirmation now lists the tables and columns that the rollback brings back
+  without their data, such as a column dropped by a migration made without "Keep a backup of
+  the dropped data". Needs Migrax 0.19.0 or later; with older versions the dialog is as
+  before.
+
 ## [0.2.0] - 2026-11-17
 
 ### Added

@@ -1,9 +1,12 @@
 package org.migrax.intellij;
 
 import com.intellij.openapi.project.Project;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Migrate and Rollback: first a dry run and {@code migrax doctor} (which names the database), then
@@ -17,6 +20,14 @@ final class MigraxDatabaseChange {
   // A migration on a big table can take long; the command waits for the lock itself.
   private static final long RUN_TIMEOUT_MILLIS = TimeUnit.HOURS.toMillis(12);
 
+  // Printed by rollback (Migrax 0.19.0 and later) before it runs, also with --dry-run, for each
+  // change whose data its script can't bring back. Older versions print none. File names may
+  // hold spaces.
+  private static final Pattern LOST_DATA =
+      Pattern.compile(
+          "^warning: (.+?) restores the structure of (.+) but not its data\\.$",
+          Pattern.MULTILINE);
+
   /** What differs between Migrate and Rollback. */
   private record Kind(
       String title,
@@ -24,6 +35,7 @@ final class MigraxDatabaseChange {
       String dryRunKey,
       String nothingToDo,
       Function<Integer, String> question,
+      Function<MigraxResult, List<String>> lostData,
       String okText,
       List<String> run,
       Function<MigraxResult, String> done) {}
@@ -35,6 +47,7 @@ final class MigraxDatabaseChange {
           "wouldApply",
           "Nothing to migrate: every migration is applied.",
           count -> "Apply " + migrations(count) + " to this database?",
+          dryRun -> List.of(),
           "Migrate",
           List.of("migrate", "--json"),
           result -> {
@@ -52,6 +65,7 @@ final class MigraxDatabaseChange {
               "Roll back "
                   + migrations(count)
                   + " in this database? Data written to removed tables and columns is lost.",
+          dryRun -> lostData(dryRun.stderr()),
           "Roll Back",
           // The dialog is the confirmation the command asks for.
           List.of("rollback", "--yes", "--json"),
@@ -113,7 +127,9 @@ final class MigraxDatabaseChange {
                 kind.question().apply(migrations.size()),
                 target,
                 migrations,
-                kind.okText())
+                kind.okText(),
+                List.of(),
+                kind.lostData().apply(dryRun))
             .showAndGet();
     if (ok) {
       run(project, kind);
@@ -141,6 +157,23 @@ final class MigraxDatabaseChange {
           MigraxToolWindowFactory.refreshStatus(project);
         },
         message -> MigraxNotifications.error(project, message));
+  }
+
+  /**
+   * What a rollback brings back without its data, from the warnings in {@code stderr}: one
+   * "orders.notes (0007_drop_notes.sql)" per change, in order and without repeats (each schema
+   * prints them again). Empty when there are none.
+   */
+  static List<String> lostData(String stderr) {
+    List<String> lost = new ArrayList<>();
+    Matcher matcher = LOST_DATA.matcher(stderr);
+    while (matcher.find()) {
+      String line = matcher.group(2) + " (" + matcher.group(1) + ")";
+      if (!lost.contains(line)) {
+        lost.add(line);
+      }
+    }
+    return lost;
   }
 
   private static String migrations(int count) {

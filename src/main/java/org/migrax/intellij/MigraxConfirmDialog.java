@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorFontType;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.ui.JBColor;
 import com.intellij.ui.components.JBLabel;
 import com.intellij.ui.components.JBRadioButton;
@@ -33,6 +34,7 @@ final class MigraxConfirmDialog extends DialogWrapper {
   private final @Nullable MigraxTarget target;
   private final List<String> migrations;
   private final List<JBRadioButton> choices = new ArrayList<>();
+  private final List<String> lostData;
   private final boolean warn;
 
   /**
@@ -59,7 +61,24 @@ final class MigraxConfirmDialog extends DialogWrapper {
       List<String> migrations,
       String okText,
       List<String> choices) {
+    this(project, title, question, target, migrations, okText, choices, List.of());
+  }
+
+  /**
+   * @param lostData what a rollback brings back without its data, such as "orders.notes
+   *     (0007_drop_notes.sql)"; no notice when empty
+   */
+  MigraxConfirmDialog(
+      Project project,
+      String title,
+      String question,
+      @Nullable MigraxTarget target,
+      List<String> migrations,
+      String okText,
+      List<String> choices,
+      List<String> lostData) {
     super(project);
+    this.lostData = lostData;
     ButtonGroup group = new ButtonGroup();
     for (String choice : choices) {
       JBRadioButton button = new JBRadioButton(choice, this.choices.isEmpty());
@@ -96,6 +115,9 @@ final class MigraxConfirmDialog extends DialogWrapper {
     if (warn) {
       top.add(warning());
     }
+    if (!lostData.isEmpty()) {
+      top.add(lostDataNotice());
+    }
 
     JBTextArea list = new JBTextArea(String.join("\n", migrations));
     list.setEditable(false);
@@ -124,6 +146,19 @@ final class MigraxConfirmDialog extends DialogWrapper {
       }
     }
     return 0;
+  }
+
+  private JComponent lostDataNotice() {
+    StringBuilder html =
+        new StringBuilder("<html>Roll Back brings these back without their data:");
+    for (String line : lostData) {
+      // Table and column names come from the project's files: show them as text, not HTML.
+      html.append("<br>&nbsp;&nbsp;").append(StringUtil.escapeXmlEntities(line));
+    }
+    JBLabel label =
+        new JBLabel(html.append("</html>").toString(), AllIcons.General.Warning, JBLabel.LEFT);
+    label.setBorder(JBUI.Borders.empty(0, 0, 6, 0));
+    return label;
   }
 
   private JComponent warning() {
